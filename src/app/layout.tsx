@@ -9,6 +9,18 @@ export const metadata: Metadata = {
   description: "메모를 모아 읽고 다시 복기하는 기록 앱",
   applicationName: "복기노트",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "복기노트",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

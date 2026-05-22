@@ -44,10 +44,10 @@ export function SettingsPage() {
           <div className="flex items-start gap-3">
             <Smartphone className="mt-1 text-[#2f6b4f]" size={20} />
             <div>
-              <p className="font-medium">PWA 설치</p>
+              <p className="font-medium">홈 화면에 추가</p>
               <p className="mt-1 text-sm leading-6 text-[#63685f]">
-                브라우저 공유 메뉴에서 홈 화면에 추가를 선택하면 앱처럼 사용할 수
-                있습니다.
+                앱처럼 빠르게 열 수 있습니다. iPhone은 Safari 공유 버튼,
+                Android는 Chrome 메뉴에서 추가하세요.
               </p>
             </div>
           </div>
