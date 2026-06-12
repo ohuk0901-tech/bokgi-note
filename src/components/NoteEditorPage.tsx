@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
-import { SaveState, SaveStatus } from "@/components/SaveStatus";
+import { SaveStatus } from "@/components/SaveStatus";
 import { SetupNotice } from "@/components/SetupNotice";
+import { useAutoSave } from "@/components/useAutoSave";
 import { useRequireAuth } from "@/components/useRequireAuth";
 import { deleteBlankDraftNote, getNote, saveNote, trashNote } from "@/lib/data";
 import type { Note } from "@/lib/types";
@@ -14,14 +16,14 @@ import type { Note } from "@/lib/types";
 const DEFAULT_NOTE_TITLE = "제목 없음";
 
 export function NoteEditorPage({ noteId }: { noteId: string }) {
+  const router = useRouter();
   const { supabase, configured, user, loading } = useRequireAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [noteDate, setNoteDate] = useState("");
-  const [status, setStatus] = useState<SaveState>("idle");
   const [loadError, setLoadError] = useState("");
-  const loaded = useRef(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const latest = useRef({
     note: null as Note | null,
     title: "",
@@ -38,45 +40,53 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
         setTitle(data.title);
         setContent(data.content);
         setNoteDate(data.note_date);
-        loaded.current = true;
+        setIsLoaded(true);
       })
       .catch((error) => {
         console.error(error);
         setLoadError("메모를 찾지 못했습니다.");
-      });
+    });
   }, [noteId, supabase, user]);
 
-  useEffect(() => {
-    if (!supabase || !note || !loaded.current) return;
-    setStatus("saving");
-    const timeout = window.setTimeout(async () => {
-      try {
-        const savedTitle = title || DEFAULT_NOTE_TITLE;
-        await saveNote(supabase, note.id, {
-          title: savedTitle,
-          content,
-          note_date: noteDate,
-        });
-        setNote((current) =>
-          current
-            ? {
-                ...current,
-                title: savedTitle,
-                content,
-                note_date: noteDate,
-                is_draft:
-                  savedTitle.trim() === DEFAULT_NOTE_TITLE && content.trim() === "",
-              }
-            : current,
-        );
-        setStatus("saved");
-      } catch (error) {
-        console.error(error);
-        setStatus("error");
-      }
-    }, 500);
-    return () => window.clearTimeout(timeout);
-  }, [content, note, noteDate, supabase, title]);
+  const autoSaveValue = useMemo(
+    () => ({ content, noteDate, title }),
+    [content, noteDate, title],
+  );
+  const currentNoteId = note?.id;
+
+  const saveCurrentNote = useCallback(
+    async (value: typeof autoSaveValue) => {
+      if (!supabase || !currentNoteId) return;
+
+      const savedTitle = value.title || DEFAULT_NOTE_TITLE;
+      await saveNote(supabase, currentNoteId, {
+        title: savedTitle,
+        content: value.content,
+        note_date: value.noteDate,
+      });
+      setNote((current) =>
+        current
+          ? {
+              ...current,
+              title: savedTitle,
+              content: value.content,
+              note_date: value.noteDate,
+              is_draft:
+                savedTitle.trim() === DEFAULT_NOTE_TITLE &&
+                value.content.trim() === "",
+            }
+          : current,
+      );
+    },
+    [currentNoteId, supabase],
+  );
+
+  const status = useAutoSave({
+    enabled: Boolean(supabase && note && isLoaded),
+    save: saveCurrentNote,
+    skipInitial: true,
+    value: autoSaveValue,
+  });
 
   useEffect(() => {
     latest.current = { note, title, content, noteDate };
@@ -135,7 +145,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   async function handleTrash() {
     if (!window.confirm("이 메모를 휴지통으로 이동할까요?")) return;
     await trashNote(client, currentNote.id);
-    window.location.href = `/folders/${currentNote.folder_id}`;
+    router.push(`/folders/${currentNote.folder_id}`);
   }
 
   return (

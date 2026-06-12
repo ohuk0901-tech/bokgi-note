@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpenCheck, Check, Plus, Search, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
@@ -19,6 +20,7 @@ import { formatKoreanDate } from "@/lib/date";
 import type { Folder, UnifiedItem } from "@/lib/types";
 
 export function FolderDetailPage({ folderId }: { folderId: string }) {
+  const router = useRouter();
   const { supabase, configured, user, loading } = useRequireAuth();
   const [folder, setFolder] = useState<Folder | null>(null);
   const [items, setItems] = useState<UnifiedItem[]>([]);
@@ -55,7 +57,7 @@ export function FolderDetailPage({ folderId }: { folderId: string }) {
   async function handleNewNote() {
     setBusy(true);
     const note = await createDraftNote(client, currentUser.id, folderId);
-    window.location.href = `/notes/${note.id}`;
+    router.push(`/notes/${note.id}`);
   }
 
   function toggle(item: UnifiedItem) {
@@ -86,7 +88,7 @@ export function FolderDetailPage({ folderId }: { folderId: string }) {
       folderId,
       selectedItems.map((item) => ({ type: item.item_type, id: item.id })),
     );
-    window.location.href = `/reviews/${review.id}`;
+    router.push(`/reviews/${review.id}`);
   }
 
   async function handleTrash(item: UnifiedItem) {
