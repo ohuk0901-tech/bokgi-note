@@ -1,33 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Pin, PinOff, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
-import { SaveStatus } from "@/components/SaveStatus";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { SetupNotice } from "@/components/SetupNotice";
 import { useAutoSave } from "@/components/useAutoSave";
 import { useRequireAuth } from "@/components/useRequireAuth";
-import { deleteBlankDraftNote, getNote, saveNote, trashNote } from "@/lib/data";
-import type { Note } from "@/lib/types";
+import {
+  completeReviewSchedule,
+  deleteBlankDraftNote,
+  getNote,
+  saveNote,
+  setNotePinned,
+  trashNote,
+} from "@/lib/data";
+import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import type { Json, Note } from "@/lib/types";
 
 const DEFAULT_NOTE_TITLE = "제목 없음";
 
 export function NoteEditorPage({ noteId }: { noteId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { supabase, configured, user, loading } = useRequireAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [contentJson, setContentJson] = useState<Json>({ type: "doc", content: [] });
+  const [contentText, setContentText] = useState("");
   const [noteDate, setNoteDate] = useState("");
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [completeBusy, setCompleteBusy] = useState(false);
+  const reviewScheduleId = searchParams.get("reviewScheduleId");
+  const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
   const latest = useRef({
     note: null as Note | null,
     title: "",
     content: "",
+    contentJson: { type: "doc", content: [] } as Json,
+    contentText: "",
     noteDate: "",
   });
 
@@ -39,6 +55,8 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
         setNote(data);
         setTitle(data.title);
         setContent(data.content);
+        setContentJson(editorJsonOrText(data.content_json, data.content));
+        setContentText(data.content_text || data.content);
         setNoteDate(data.note_date);
         setIsLoaded(true);
       })
@@ -49,8 +67,8 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   }, [noteId, supabase, user]);
 
   const autoSaveValue = useMemo(
-    () => ({ content, noteDate, title }),
-    [content, noteDate, title],
+    () => ({ content, contentJson, contentText, noteDate, title }),
+    [content, contentJson, contentText, noteDate, title],
   );
   const currentNoteId = note?.id;
 
@@ -62,6 +80,8 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
       await saveNote(supabase, currentNoteId, {
         title: savedTitle,
         content: value.content,
+        content_json: value.contentJson,
+        content_text: value.contentText,
         note_date: value.noteDate,
       });
       setNote((current) =>
@@ -70,10 +90,12 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
               ...current,
               title: savedTitle,
               content: value.content,
+              content_json: value.contentJson,
+              content_text: value.contentText,
               note_date: value.noteDate,
               is_draft:
                 savedTitle.trim() === DEFAULT_NOTE_TITLE &&
-                value.content.trim() === "",
+                value.contentText.trim() === "",
             }
           : current,
       );
@@ -81,7 +103,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     [currentNoteId, supabase],
   );
 
-  const status = useAutoSave({
+  useAutoSave({
     enabled: Boolean(supabase && note && isLoaded),
     save: saveCurrentNote,
     skipInitial: true,
@@ -89,8 +111,8 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   });
 
   useEffect(() => {
-    latest.current = { note, title, content, noteDate };
-  }, [content, note, noteDate, title]);
+    latest.current = { note, title, content, contentJson, contentText, noteDate };
+  }, [content, contentJson, contentText, note, noteDate, title]);
 
   useEffect(() => {
     return () => {
@@ -102,18 +124,22 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           ...snapshot.note,
           title: savedTitle,
           content: snapshot.content,
+          content_json: snapshot.contentJson,
+          content_text: snapshot.contentText,
           note_date: savedDate,
         };
 
         if (
           savedTitle.trim() === DEFAULT_NOTE_TITLE &&
-          !snapshot.content.trim()
+          !snapshot.contentText.trim()
         ) {
           void deleteBlankDraftNote(supabase, finalNote);
         } else {
           void saveNote(supabase, snapshot.note.id, {
             title: savedTitle,
             content: snapshot.content,
+            content_json: snapshot.contentJson,
+            content_text: snapshot.contentText,
             note_date: savedDate,
           });
         }
@@ -140,19 +166,56 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   if (loading || !supabase || !user || !note) return <LoadingState />;
 
   const client = supabase;
+  const currentUser = user;
   const currentNote = note;
 
   async function handleTrash() {
     if (!window.confirm("이 메모를 휴지통으로 이동할까요?")) return;
     await trashNote(client, currentNote.id);
-    router.push(`/folders/${currentNote.folder_id}`);
+    router.push(backHref ?? `/folders/${currentNote.folder_id}`);
+  }
+
+  async function handlePin() {
+    try {
+      await setNotePinned(client, currentUser.id, currentNote.id, !currentNote.is_pinned);
+      setNote((value) =>
+        value
+          ? {
+              ...value,
+              is_pinned: !value.is_pinned,
+              pinned_at: !value.is_pinned ? new Date().toISOString() : null,
+            }
+          : value,
+      );
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "대표 메모를 변경하지 못했습니다.");
+    }
+  }
+
+  async function handleCompleteReview() {
+    if (!reviewScheduleId) return;
+    setCompleteBusy(true);
+    try {
+      await completeReviewSchedule(client, currentUser.id, reviewScheduleId);
+      router.replace(`/notes/${currentNote.id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "복기를 완료하지 못했습니다.");
+      setCompleteBusy(false);
+    }
+  }
+
+  function handleEditorChange(value: { contentJson: Json; contentText: string }) {
+    const payload = toEditorPayload(value.contentJson, value.contentText);
+    setContent(payload.content);
+    setContentJson(payload.content_json);
+    setContentText(payload.content_text);
   }
 
   return (
     <AppChrome>
       <div className="mb-4 flex items-center justify-between">
         <Link
-          href={`/folders/${note.folder_id}`}
+          href={backHref ?? `/folders/${note.folder_id}`}
           className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
           aria-label="뒤로"
           title="뒤로"
@@ -160,7 +223,24 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           <ArrowLeft size={19} />
         </Link>
         <div className="flex items-center gap-3">
-          <SaveStatus state={status} />
+          {reviewScheduleId ? (
+            <button
+              onClick={handleCompleteReview}
+              disabled={completeBusy}
+              className="flex h-10 items-center gap-2 rounded-full bg-[#2f6b4f] px-3 text-xs font-medium text-white disabled:opacity-50"
+            >
+              <CheckCircle2 size={16} />
+              복기 완료
+            </button>
+          ) : null}
+          <button
+            onClick={handlePin}
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
+            title={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
+            aria-label={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
+          >
+            {currentNote.is_pinned ? <PinOff size={18} /> : <Pin size={18} />}
+          </button>
           <button
             onClick={handleTrash}
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
@@ -185,12 +265,13 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           onChange={(event) => setNoteDate(event.target.value)}
           className="mt-3 rounded border border-[#d4d8d1] bg-white px-3 py-2 text-sm text-[#53584f] outline-none"
         />
-        <textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          className="mt-6 min-h-[60vh] w-full resize-none bg-transparent text-lg leading-8 outline-none"
-          placeholder="내용을 입력하세요"
-        />
+        <div className="mt-6">
+          <RichTextEditor
+            key={note.id}
+            contentJson={contentJson}
+            onChange={handleEditorChange}
+          />
+        </div>
       </div>
     </AppChrome>
   );

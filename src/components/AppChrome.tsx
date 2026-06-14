@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Archive, Folder, Settings } from "lucide-react";
+import { Archive, Folder, LayoutDashboard, Settings } from "lucide-react";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f7f7f4] text-[#1f1f1f]">
       <header className="sticky top-0 z-20 border-b border-[#dddeda] bg-[#f7f7f4]/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/folders" className="text-lg font-semibold">
+          <Link href="/dashboard" className="text-lg font-semibold">
             복기노트
           </Link>
           <nav className="flex items-center gap-1">
+            <IconLink href="/dashboard" label="대시보드">
+              <LayoutDashboard size={19} />
+            </IconLink>
             <IconLink href="/folders" label="폴더">
               <Folder size={19} />
             </IconLink>

@@ -1,13 +1,15 @@
 "use client";
 
 import { BookOpenCheck } from "lucide-react";
+import { RichTextEditor, type RichTextValue } from "@/components/RichTextEditor";
+import type { Json } from "@/lib/types";
 
 export function ReviewDraftBox({
-  content,
+  contentJson,
   onChange,
 }: {
-  content: string;
-  onChange: (content: string) => void;
+  contentJson: Json;
+  onChange: (value: RichTextValue) => void;
 }) {
   return (
     <section className="my-4 rounded border border-[#dfd3bf] bg-white p-4">
@@ -15,11 +17,11 @@ export function ReviewDraftBox({
         <BookOpenCheck size={17} />
         복기 입력
       </div>
-      <textarea
-        value={content}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-48 w-full resize-none bg-transparent text-base leading-7 outline-none"
+      <RichTextEditor
+        contentJson={contentJson}
+        minHeight="12rem"
         placeholder="읽으면서 복기 내용을 적어보세요"
+        onChange={onChange}
       />
     </section>
   );

@@ -34,14 +34,38 @@ export type Folder = {
   delete_after: string | null;
 };
 
+export type Template = {
+  id: string;
+  user_id: string;
+  name: string;
+  content: string;
+  content_json: Json;
+  content_text: string;
+  default_folder_id: string | null;
+  is_primary: boolean;
+  usage_count: number;
+  allow_multiple_per_day: boolean;
+  review_schedule_preset: "none" | "1w_3m_1y";
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  delete_after: string | null;
+};
+
 export type Note = {
   id: string;
   user_id: string;
   folder_id: string;
+  template_id: string | null;
   title: string;
   content: string;
+  content_json: Json;
+  content_text: string;
   note_date: string;
   is_draft: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
+  routine_key: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -54,6 +78,8 @@ export type ReviewSession = {
   folder_id: string;
   title: string;
   content: string;
+  content_json: Json;
+  content_text: string;
   review_date: string;
   editor_position: number;
   is_draft: boolean;
@@ -80,6 +106,18 @@ export type EditableReviewNote = {
   created_at: string;
 };
 
+export type ReviewSchedule = {
+  id: string;
+  user_id: string;
+  note_id: string;
+  review_type: "1w" | "3m" | "1y";
+  due_date: string;
+  status: "pending" | "completed" | "skipped";
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -92,6 +130,11 @@ export type Database = {
         Folder,
         Partial<Folder> & { user_id: string; name: string },
         Partial<Folder>
+      >;
+      templates: Table<
+        Template,
+        Partial<Template> & { user_id: string; name: string },
+        Partial<Template>
       >;
       notes: Table<
         Note,
@@ -120,6 +163,16 @@ export type Database = {
         },
         Partial<EditableReviewNote>
       >;
+      review_schedules: Table<
+        ReviewSchedule,
+        Partial<ReviewSchedule> & {
+          user_id: string;
+          note_id: string;
+          review_type: "1w" | "3m" | "1y";
+          due_date: string;
+        },
+        Partial<ReviewSchedule>
+      >;
     };
     Functions: {
       purge_deleted_items: {
@@ -147,4 +200,8 @@ export type UnifiedItem = {
 
 export type ReviewSourceItem = UnifiedItem & {
   sort_order: number;
+};
+
+export type DashboardReviewItem = ReviewSchedule & {
+  note: Note;
 };

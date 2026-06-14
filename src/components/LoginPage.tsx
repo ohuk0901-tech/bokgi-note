@@ -46,7 +46,7 @@ export function LoginPage() {
       return;
     }
 
-    router.replace("/folders");
+    router.replace("/dashboard");
   }
 
   async function handleGoogle() {

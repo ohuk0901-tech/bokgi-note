@@ -15,16 +15,17 @@ export function buildTextSearchFilter(query: string) {
     .trim();
 
   if (!term) return null;
-  return `title.ilike.%${term}%,content.ilike.%${term}%`;
+  return `title.ilike.%${term}%,content.ilike.%${term}%,content_text.ilike.%${term}%`;
 }
 
 export function noteToUnified(note: Note): UnifiedItem {
+  const content = note.content_text || note.content;
   return {
     id: note.id,
     item_type: "note",
     title: note.title,
-    content: note.content,
-    preview: previewText(note.content),
+    content,
+    preview: previewText(content),
     display_date: note.note_date,
     created_at: note.created_at,
     updated_at: note.updated_at,
@@ -33,12 +34,13 @@ export function noteToUnified(note: Note): UnifiedItem {
 }
 
 export function reviewToUnified(review: ReviewSession): UnifiedItem {
+  const content = review.content_text || review.content;
   return {
     id: review.id,
     item_type: "review_session",
     title: review.title,
-    content: review.content,
-    preview: previewText(review.content),
+    content,
+    preview: previewText(content),
     display_date: review.review_date,
     created_at: review.created_at,
     updated_at: review.updated_at,

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createDefaultFolderIfMissing } from "@/lib/data/folders";
 import type { Client } from "@/lib/data/shared";
+import { ensureDefaultTemplates } from "@/lib/data/templates";
 
 export async function ensureUserReady(supabase: Client, user: User) {
   const { error: profileError } = await supabase.from("profiles").upsert({
@@ -23,4 +24,5 @@ export async function ensureUserReady(supabase: Client, user: User) {
   }
 
   await createDefaultFolderIfMissing(supabase, user.id);
+  await ensureDefaultTemplates(supabase, user.id);
 }

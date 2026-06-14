@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { useAutoSave } from "@/components/useAutoSave";
-import type { Note } from "@/lib/types";
+import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import type { Json, Note } from "@/lib/types";
 
-type EditableNoteValues = Pick<Note, "title" | "content" | "note_date">;
+type EditableNoteValues = Pick<
+  Note,
+  "title" | "content" | "content_json" | "content_text" | "note_date"
+>;
 
 export function EditableReviewNoteCard({
   note,
@@ -15,11 +20,21 @@ export function EditableReviewNoteCard({
 }) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
+  const [contentJson, setContentJson] = useState<Json>(
+    editorJsonOrText(note.content_json, note.content),
+  );
+  const [contentText, setContentText] = useState(note.content_text || note.content);
   const [noteDate, setNoteDate] = useState(note.note_date);
 
   const value = useMemo(
-    () => ({ content, note_date: noteDate, title }),
-    [content, noteDate, title],
+    () => ({
+      content,
+      content_json: contentJson,
+      content_text: contentText,
+      note_date: noteDate,
+      title,
+    }),
+    [content, contentJson, contentText, noteDate, title],
   );
   const save = useCallback(
     async (nextValue: typeof value) => {
@@ -48,11 +63,22 @@ export function EditableReviewNoteCard({
         onChange={(event) => setNoteDate(event.target.value)}
         className="mt-3 rounded border border-[#d4d8d1] px-3 py-2 text-sm"
       />
-      <textarea
-        value={content}
-        onChange={(event) => setContent(event.target.value)}
-        className="mt-3 min-h-32 w-full resize-none bg-transparent leading-7 outline-none"
-      />
+      <div className="mt-3">
+        <RichTextEditor
+          key={note.id}
+          contentJson={contentJson}
+          minHeight="8rem"
+          onChange={(nextValue) => {
+            const payload = toEditorPayload(
+              nextValue.contentJson,
+              nextValue.contentText,
+            );
+            setContent(payload.content);
+            setContentJson(payload.content_json);
+            setContentText(payload.content_text);
+          }}
+        />
+      </div>
     </div>
   );
 }

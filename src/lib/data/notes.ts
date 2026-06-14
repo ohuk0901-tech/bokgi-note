@@ -1,7 +1,11 @@
 import { deleteAfter30Days, todayISO } from "@/lib/date";
 import { buildTextSearchFilter, DEFAULT_NOTE_TITLE } from "@/lib/data/shared";
 import type { Client } from "@/lib/data/shared";
+import { EMPTY_EDITOR_DOC } from "@/lib/editor";
 import type { Note } from "@/lib/types";
+
+export type NoteSaveValues = Pick<Note, "title" | "content" | "note_date"> &
+  Partial<Pick<Note, "content_json" | "content_text">>;
 
 export async function createDraftNote(
   supabase: Client,
@@ -15,6 +19,8 @@ export async function createDraftNote(
       folder_id: folderId,
       title: DEFAULT_NOTE_TITLE,
       content: "",
+      content_json: EMPTY_EDITOR_DOC,
+      content_text: "",
       note_date: todayISO(),
       is_draft: true,
     })
@@ -39,13 +45,18 @@ export async function getNote(supabase: Client, id: string) {
 export async function saveNote(
   supabase: Client,
   id: string,
-  values: Pick<Note, "title" | "content" | "note_date">,
+  values: NoteSaveValues,
 ) {
+  const contentText = values.content_text ?? values.content;
   const is_draft =
-    values.title.trim() === DEFAULT_NOTE_TITLE && values.content.trim() === "";
+    values.title.trim() === DEFAULT_NOTE_TITLE && contentText.trim() === "";
   const { data, error } = await supabase
     .from("notes")
-    .update({ ...values, is_draft })
+    .update({
+      ...values,
+      content_text: contentText,
+      is_draft,
+    })
     .eq("id", id)
     .select("id")
     .maybeSingle();
@@ -55,7 +66,8 @@ export async function saveNote(
 }
 
 export async function deleteBlankDraftNote(supabase: Client, note: Note) {
-  if (note.is_draft && note.title === DEFAULT_NOTE_TITLE && !note.content.trim()) {
+  const content = note.content_text || note.content;
+  if (note.is_draft && note.title === DEFAULT_NOTE_TITLE && !content.trim()) {
     const { error } = await supabase.from("notes").delete().eq("id", note.id);
     if (error) throw error;
   }
@@ -89,7 +101,7 @@ export async function getActiveNotes(supabase: Client, query = "") {
 export async function saveEditableNote(
   supabase: Client,
   noteId: string,
-  values: Pick<Note, "title" | "content" | "note_date">,
+  values: NoteSaveValues,
 ) {
   await saveNote(supabase, noteId, values);
 }

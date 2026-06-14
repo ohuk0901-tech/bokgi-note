@@ -17,3 +17,139 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.tiptap-editor p {
+  min-height: 1.75rem;
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  margin: 0.5rem 0;
+  padding-left: 1.75rem;
+}
+
+.tiptap-editor ul {
+  list-style-type: disc !important;
+}
+
+.tiptap-editor ul ul {
+  list-style-type: circle !important;
+}
+
+.tiptap-editor ul ul ul {
+  list-style-type: square !important;
+}
+
+.tiptap-editor ul ul ul ul {
+  list-style-type: disc !important;
+}
+
+.tiptap-editor ul ul ul ul ul {
+  list-style-type: circle !important;
+}
+
+.tiptap-editor ul ul ul ul ul ul {
+  list-style-type: square !important;
+}
+
+.tiptap-editor ol {
+  list-style-type: decimal !important;
+}
+
+.tiptap-editor ol ol {
+  list-style-type: lower-alpha !important;
+}
+
+.tiptap-editor ol ol ol {
+  list-style-type: lower-roman !important;
+}
+
+.tiptap-editor ol ol ol ol {
+  list-style-type: decimal !important;
+}
+
+.tiptap-editor ol ol ol ol ol {
+  list-style-type: lower-alpha !important;
+}
+
+.tiptap-editor ol ol ol ol ol ol {
+  list-style-type: lower-roman !important;
+}
+
+.tiptap-editor ol li::marker {
+  content: counter(list-item, decimal) ". ";
+}
+
+.tiptap-editor ol ol li::marker {
+  content: counter(list-item, lower-alpha) ". ";
+}
+
+.tiptap-editor ol ol ol li::marker {
+  content: counter(list-item, lower-roman) ". ";
+}
+
+.tiptap-editor ol ol ol ol li::marker {
+  content: counter(list-item, decimal) ". ";
+}
+
+.tiptap-editor ol ol ol ol ol li::marker {
+  content: counter(list-item, lower-alpha) ". ";
+}
+
+.tiptap-editor ol ol ol ol ol ol li::marker {
+  content: counter(list-item, lower-roman) ". ";
+}
+
+.tiptap-editor ul li::marker {
+  content: "● ";
+}
+
+.tiptap-editor ul ul li::marker {
+  content: "○ ";
+}
+
+.tiptap-editor ul ul ul li::marker {
+  content: "■ ";
+}
+
+.tiptap-editor ul ul ul ul li::marker {
+  content: "● ";
+}
+
+.tiptap-editor ul ul ul ul ul li::marker {
+  content: "○ ";
+}
+
+.tiptap-editor ul ul ul ul ul ul li::marker {
+  content: "■ ";
+}
+
+.tiptap-editor li {
+  padding-left: 0.15rem;
+}
+
+.tiptap-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-task-item {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.tiptap-task-item > label {
+  display: flex;
+  padding-top: 0.28rem;
+}
+
+.tiptap-task-item > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tiptap-task-item input[type="checkbox"] {
+  height: 1rem;
+  width: 1rem;
+}

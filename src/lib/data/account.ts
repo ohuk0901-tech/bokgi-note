@@ -15,6 +15,10 @@ export async function requestAccountDeletion(supabase: Client, userId: string) {
       .update({ deleted_at: deletedAt, delete_after: deleteAfter })
       .eq("user_id", userId),
     supabase
+      .from("templates")
+      .update({ deleted_at: deletedAt, delete_after: deleteAfter })
+      .eq("user_id", userId),
+    supabase
       .from("notes")
       .update({ deleted_at: deletedAt, delete_after: deleteAfter })
       .eq("user_id", userId),

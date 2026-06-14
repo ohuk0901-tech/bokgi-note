@@ -9,7 +9,6 @@ import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
 import { ReviewDraftBox } from "@/components/review/ReviewDraftBox";
 import { ReviewSourceCard } from "@/components/review/ReviewSourceCard";
-import { SaveStatus } from "@/components/SaveStatus";
 import { SetupNotice } from "@/components/SetupNotice";
 import { useAutoSave } from "@/components/useAutoSave";
 import { useRequireAuth } from "@/components/useRequireAuth";
@@ -23,7 +22,8 @@ import {
   trashReview,
 } from "@/lib/data";
 import { defaultReviewTitle } from "@/lib/date";
-import type { Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
+import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
 export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const router = useRouter();
@@ -33,6 +33,8 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [editableNotes, setEditableNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [contentJson, setContentJson] = useState<Json>({ type: "doc", content: [] });
+  const [contentText, setContentText] = useState("");
   const [reviewDate, setReviewDate] = useState("");
   const [editorPosition, setEditorPosition] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -41,6 +43,8 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     review: null as ReviewSession | null,
     title: "",
     content: "",
+    contentJson: { type: "doc", content: [] } as Json,
+    contentText: "",
     reviewDate: "",
     editorPosition: 0,
   });
@@ -55,6 +59,8 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
         setEditableNotes(data.editableNotes);
         setTitle(data.review.title);
         setContent(data.review.content);
+        setContentJson(editorJsonOrText(data.review.content_json, data.review.content));
+        setContentText(data.review.content_text || data.review.content);
         setReviewDate(data.review.review_date);
         setEditorPosition(data.review.editor_position);
         setIsLoaded(true);
@@ -66,8 +72,8 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   }, [reviewId, supabase, user]);
 
   const autoSaveValue = useMemo(
-    () => ({ content, editorPosition, reviewDate, title }),
-    [content, editorPosition, reviewDate, title],
+    () => ({ content, contentJson, contentText, editorPosition, reviewDate, title }),
+    [content, contentJson, contentText, editorPosition, reviewDate, title],
   );
   const currentReviewId = review?.id;
 
@@ -78,6 +84,8 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
       await saveReview(supabase, currentReviewId, {
         title: value.title,
         content: value.content,
+        content_json: value.contentJson,
+        content_text: value.contentText,
         review_date: value.reviewDate,
         editor_position: value.editorPosition,
       });
@@ -87,11 +95,13 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
               ...current,
               title: value.title,
               content: value.content,
+              content_json: value.contentJson,
+              content_text: value.contentText,
               review_date: value.reviewDate,
               editor_position: value.editorPosition,
               is_draft:
                 value.title.trim() === defaultReviewTitle(value.reviewDate) &&
-                value.content.trim() === "",
+                value.contentText.trim() === "",
             }
           : current,
       );
@@ -99,7 +109,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     [currentReviewId, supabase],
   );
 
-  const status = useAutoSave({
+  useAutoSave({
     enabled: Boolean(supabase && review && isLoaded),
     save: saveCurrentReview,
     skipInitial: true,
@@ -107,8 +117,16 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   });
 
   useEffect(() => {
-    latest.current = { review, title, content, reviewDate, editorPosition };
-  }, [content, editorPosition, review, reviewDate, title]);
+    latest.current = {
+      review,
+      title,
+      content,
+      contentJson,
+      contentText,
+      reviewDate,
+      editorPosition,
+    };
+  }, [content, contentJson, contentText, editorPosition, review, reviewDate, title]);
 
   useEffect(() => {
     return () => {
@@ -120,19 +138,23 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
           ...snapshot.review,
           title: savedTitle,
           content: snapshot.content,
+          content_json: snapshot.contentJson,
+          content_text: snapshot.contentText,
           review_date: savedDate,
           editor_position: snapshot.editorPosition,
         };
 
         if (
           savedTitle.trim() === defaultReviewTitle(savedDate) &&
-          !snapshot.content.trim()
+          !snapshot.contentText.trim()
         ) {
           void deleteBlankDraftReview(supabase, finalReview);
         } else {
           void saveReview(supabase, snapshot.review.id, {
             title: savedTitle,
             content: snapshot.content,
+            content_json: snapshot.contentJson,
+            content_text: snapshot.contentText,
             review_date: savedDate,
             editor_position: snapshot.editorPosition,
           });
@@ -184,7 +206,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
 
   async function handleEditableChange(
     note: Note,
-    values: Pick<Note, "title" | "content" | "note_date">,
+    values: Pick<Note, "title" | "content" | "content_json" | "content_text" | "note_date">,
   ) {
     setEditableNotes((current) =>
       current.map((item) => (item.id === note.id ? { ...item, ...values } : item)),
@@ -198,7 +220,20 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     router.push(`/folders/${currentReview.folder_id}`);
   }
 
-  const editor = <ReviewDraftBox content={content} onChange={setContent} />;
+  function handleEditorChange(value: { contentJson: Json; contentText: string }) {
+    const payload = toEditorPayload(value.contentJson, value.contentText);
+    setContent(payload.content);
+    setContentJson(payload.content_json);
+    setContentText(payload.content_text);
+  }
+
+  const editor = (
+    <ReviewDraftBox
+      key={review.id}
+      contentJson={contentJson}
+      onChange={handleEditorChange}
+    />
+  );
 
   return (
     <AppChrome>
@@ -212,7 +247,6 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
           <ArrowLeft size={19} />
         </Link>
         <div className="flex items-center gap-3">
-          <SaveStatus state={status} />
           <button
             onClick={handleTrash}
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"

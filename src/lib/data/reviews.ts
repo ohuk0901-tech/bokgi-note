@@ -1,7 +1,14 @@
 import { defaultReviewTitle, deleteAfter30Days, todayISO } from "@/lib/date";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
 import type { Client } from "@/lib/data/shared";
+import { EMPTY_EDITOR_DOC } from "@/lib/editor";
 import type { Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
+
+export type ReviewSaveValues = Pick<
+  ReviewSession,
+  "title" | "content" | "review_date" | "editor_position"
+> &
+  Partial<Pick<ReviewSession, "content_json" | "content_text">>;
 
 export async function createReviewDraft(
   supabase: Client,
@@ -17,6 +24,8 @@ export async function createReviewDraft(
       folder_id: folderId,
       title: defaultReviewTitle(reviewDate),
       content: "",
+      content_json: EMPTY_EDITOR_DOC,
+      content_text: "",
       review_date: reviewDate,
       editor_position: 0,
       is_draft: true,
@@ -127,14 +136,15 @@ export async function getReviewWithSources(supabase: Client, id: string) {
 export async function saveReview(
   supabase: Client,
   id: string,
-  values: Pick<ReviewSession, "title" | "content" | "review_date" | "editor_position">,
+  values: ReviewSaveValues,
 ) {
   const defaultTitle = defaultReviewTitle(values.review_date);
+  const contentText = values.content_text ?? values.content;
   const is_draft =
-    values.title.trim() === defaultTitle && values.content.trim() === "";
+    values.title.trim() === defaultTitle && contentText.trim() === "";
   const { data, error } = await supabase
     .from("review_sessions")
-    .update({ ...values, is_draft })
+    .update({ ...values, content_text: contentText, is_draft })
     .eq("id", id)
     .select("id")
     .maybeSingle();
@@ -147,7 +157,8 @@ export async function deleteBlankDraftReview(
   review: ReviewSession,
 ) {
   const defaultTitle = defaultReviewTitle(review.review_date);
-  if (review.is_draft && review.title === defaultTitle && !review.content.trim()) {
+  const content = review.content_text || review.content;
+  if (review.is_draft && review.title === defaultTitle && !content.trim()) {
     const { error } = await supabase
       .from("review_sessions")
       .delete()
