@@ -77,11 +77,16 @@ export function useRequireAuth() {
 
     void checkUser();
 
-    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
         setUser(null);
         setLoading(false);
         router.replace("/login");
+        return;
+      }
+
+      if (session?.user) {
+        setUser(session.user);
       }
     });
 
