@@ -16,7 +16,7 @@ export function EditableReviewNoteCard({
   onChange,
 }: {
   note: Note;
-  onChange: (values: EditableNoteValues) => void;
+  onChange: (values: EditableNoteValues) => Promise<void> | void;
 }) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
@@ -38,12 +38,12 @@ export function EditableReviewNoteCard({
   );
   const save = useCallback(
     async (nextValue: typeof value) => {
-      onChange(nextValue);
+      await onChange(nextValue);
     },
     [onChange],
   );
 
-  useAutoSave({
+  const saveStatus = useAutoSave({
     enabled: true,
     save,
     skipInitial: true,
@@ -63,6 +63,11 @@ export function EditableReviewNoteCard({
         onChange={(event) => setNoteDate(event.target.value)}
         className="mt-3 rounded border border-[#d4d8d1] px-3 py-2 text-sm"
       />
+      {saveStatus === "error" ? (
+        <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          저장하지 못했습니다. 인터넷 연결을 확인해주세요.
+        </p>
+      ) : null}
       <div className="mt-3">
         <RichTextEditor
           key={note.id}

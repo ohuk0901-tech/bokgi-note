@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, LogOut, Pencil, Smartphone, Star, UserX } from "lucide-react";
+import { LogOut, Pencil, Plus, Smartphone, Star, Trash2, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
@@ -9,10 +9,11 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { SetupNotice } from "@/components/SetupNotice";
 import { useRequireAuth } from "@/components/useRequireAuth";
 import {
+  createTemplate,
   getTemplates,
   requestAccountDeletion,
-  setPrimaryTemplate,
-  updateTemplateContent,
+  trashTemplate,
+  updateTemplateDetails,
 } from "@/lib/data";
 import type { Client } from "@/lib/data/shared";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
@@ -24,6 +25,8 @@ export function SettingsPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [templateMessage, setTemplateMessage] = useState("");
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
 
   useEffect(() => {
     if (!supabase || !user) return;
@@ -50,14 +53,36 @@ export function SettingsPage() {
     router.replace("/login");
   }
 
-  async function makePrimary(templateId: string) {
-    await setPrimaryTemplate(client, currentUser.id, templateId);
-    setTemplates((current) =>
-      current.map((template) => ({
-        ...template,
-        is_primary: template.id === templateId,
-      })),
+  async function addTemplate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = newTemplateName.trim();
+    if (!name) return;
+    setCreatingTemplate(true);
+    try {
+      const template = await createTemplate(client, currentUser.id, { name });
+      setTemplates((current) => [...current, template]);
+      setEditingTemplateId(template.id);
+      setNewTemplateName("");
+      setTemplateMessage("템플릿을 추가했습니다.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "템플릿을 추가하지 못했습니다.");
+    } finally {
+      setCreatingTemplate(false);
+    }
+  }
+
+  async function deleteTemplate(template: Template) {
+    const ok = window.confirm(
+      `'${template.name}' 템플릿을 삭제할까요? 기존 메모와 폴더는 유지됩니다.`,
     );
+    if (!ok) return;
+    try {
+      await trashTemplate(client, currentUser.id, template);
+      setTemplates((current) => current.filter((item) => item.id !== template.id));
+      setTemplateMessage("템플릿을 삭제했습니다.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "템플릿을 삭제하지 못했습니다.");
+    }
   }
 
   return (
@@ -85,6 +110,21 @@ export function SettingsPage() {
             <Star className="text-[#2f6b4f]" size={19} />
             <h2 className="font-semibold">템플릿</h2>
           </div>
+          <form onSubmit={addTemplate} className="mb-4 flex gap-2">
+            <input
+              value={newTemplateName}
+              onChange={(event) => setNewTemplateName(event.target.value)}
+              className="min-w-0 flex-1 rounded border border-[#d4d8d1] bg-white px-3 text-sm outline-none"
+              placeholder="새 템플릿 이름"
+            />
+            <button
+              disabled={creatingTemplate || !newTemplateName.trim()}
+              className="flex h-10 items-center gap-2 rounded bg-[#1f1f1f] px-3 text-sm font-medium text-white disabled:opacity-50"
+            >
+              <Plus size={16} />
+              추가
+            </button>
+          </form>
           <div className="space-y-3">
             {templates.map((template) => (
               <div
@@ -95,19 +135,14 @@ export function SettingsPage() {
                   <div className="min-w-0">
                     <p className="truncate font-medium">{template.name}</p>
                     <p className="mt-1 text-xs text-[#72786f]">
-                      {template.is_primary ? "대표 템플릿" : "일반 템플릿"}
+                      {template.template_kind === "investment_journal"
+                        ? "대표 템플릿"
+                        : template.template_kind === "custom"
+                          ? "사용자 템플릿"
+                          : "기본 템플릿"}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => makePrimary(template.id)}
-                      disabled={template.is_primary}
-                      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec] disabled:opacity-40"
-                      title="대표 템플릿으로 설정"
-                      aria-label="대표 템플릿으로 설정"
-                    >
-                      <Check size={17} />
-                    </button>
                     <button
                       onClick={() =>
                         setEditingTemplateId((current) =>
@@ -120,11 +155,22 @@ export function SettingsPage() {
                     >
                       <Pencil size={17} />
                     </button>
+                    {template.template_kind === "custom" ? (
+                      <button
+                        onClick={() => deleteTemplate(template)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec]"
+                        title="템플릿 삭제"
+                        aria-label="템플릿 삭제"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
                 {editingTemplateId === template.id ? (
                   <TemplateEditor
                     supabase={client}
+                    userId={currentUser.id}
                     template={template}
                     onSaved={(updated) => {
                       setTemplates((current) =>
@@ -164,13 +210,16 @@ export function SettingsPage() {
 
 function TemplateEditor({
   supabase,
+  userId,
   template,
   onSaved,
 }: {
   supabase: Client;
+  userId: string;
   template: Template;
   onSaved: (template: Template) => void;
 }) {
+  const [name, setName] = useState(template.name);
   const [contentJson, setContentJson] = useState<Json>(
     editorJsonOrText(template.content_json, template.content),
   );
@@ -181,23 +230,30 @@ function TemplateEditor({
 
   async function saveTemplate() {
     setSaving(true);
-    const payload = toEditorPayload(contentJson, contentText);
-    await updateTemplateContent(supabase, template.id, {
-      content: payload.content,
-      content_json: payload.content_json,
-      content_text: payload.content_text,
-    });
-    onSaved({
-      ...template,
-      content: payload.content,
-      content_json: payload.content_json,
-      content_text: payload.content_text,
-    });
-    setSaving(false);
+    try {
+      const payload = toEditorPayload(contentJson, contentText);
+      const updated = await updateTemplateDetails(supabase, userId, template, {
+        name,
+        content: payload.content,
+        content_json: payload.content_json,
+        content_text: payload.content_text,
+      });
+      onSaved(updated);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "템플릿을 저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <div className="mt-3">
+      <input
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        className="mb-3 h-10 w-full rounded border border-[#d4d8d1] bg-white px-3 text-sm font-medium outline-none"
+        placeholder="템플릿 이름"
+      />
       <RichTextEditor
         key={template.id}
         contentJson={contentJson}
@@ -209,7 +265,7 @@ function TemplateEditor({
       />
       <button
         onClick={saveTemplate}
-        disabled={saving}
+        disabled={saving || !name.trim()}
         className="mt-3 h-10 rounded bg-[#1f1f1f] px-4 text-sm font-medium text-white disabled:opacity-50"
       >
         저장

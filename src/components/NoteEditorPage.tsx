@@ -103,7 +103,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     [currentNoteId, supabase],
   );
 
-  useAutoSave({
+  const saveStatus = useAutoSave({
     enabled: Boolean(supabase && note && isLoaded),
     save: saveCurrentNote,
     skipInitial: true,
@@ -265,6 +265,11 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           onChange={(event) => setNoteDate(event.target.value)}
           className="mt-3 rounded border border-[#d4d8d1] bg-white px-3 py-2 text-sm text-[#53584f] outline-none"
         />
+        {saveStatus === "error" ? (
+          <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            저장하지 못했습니다. 인터넷 연결을 확인해주세요.
+          </p>
+        ) : null}
         <div className="mt-6">
           <RichTextEditor
             key={note.id}

@@ -1,5 +1,6 @@
-import { todayISO } from "@/lib/date";
+import { addDaysISO, formatKoreanDate, todayISO, weekStartISO } from "@/lib/date";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
+import { createReviewDraft } from "@/lib/data/reviews";
 import {
   findRoutineNote,
   getTemplates,
@@ -24,14 +25,17 @@ export type DashboardRoutineItem = {
 export async function getDashboardData(supabase: Client, userId: string) {
   const templates = await getTemplates(supabase);
   const primaryTemplate =
-    templates.find((template) => template.is_primary) ?? templates[0] ?? null;
+    templates.find((template) => template.template_kind === "investment_journal") ??
+    templates.find((template) => template.is_primary) ??
+    templates[0] ??
+    null;
   const primaryNote = primaryTemplate
     ? await findRoutineNote(supabase, userId, primaryTemplate)
     : null;
 
   const weeklyTemplates = shouldShowWeeklyRoutines()
     ? templates.filter((template) =>
-        ["한 주 마무리", "다음 주 계획"].includes(template.name),
+        ["weekly_review", "next_week_plan"].includes(template.template_kind),
       )
     : [];
 
@@ -112,6 +116,65 @@ export async function completeReviewSchedule(
     .eq("user_id", userId);
 
   if (error) throw error;
+}
+
+export async function startWeeklyReview(
+  supabase: Client,
+  userId: string,
+  date = todayISO(),
+) {
+  const weekStart = weekStartISO(date);
+  const weekEnd = addDaysISO(weekStart, 6);
+  const { data: templates, error: templateError } = await supabase
+    .from("templates")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("template_kind", "investment_journal")
+    .is("deleted_at", null);
+  if (templateError) throw templateError;
+
+  const templateIds = (templates ?? []).map((template) => template.id);
+  if (!templateIds.length) {
+    throw new Error("투자 일기 템플릿을 찾지 못했습니다.");
+  }
+
+  const { data: notes, error: notesError } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", userId)
+    .in("template_id", templateIds)
+    .gte("note_date", weekStart)
+    .lte("note_date", weekEnd)
+    .eq("is_draft", false)
+    .is("deleted_at", null)
+    .order("note_date", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (notesError) throw notesError;
+  if (!notes?.length) {
+    throw new Error("이번 주에 작성한 투자 일기가 없습니다.");
+  }
+
+  const title = `${formatKoreanDate(weekStart)}-${formatKoreanDate(weekEnd)} 주간 복기`;
+  const { data: existingReview, error: existingError } = await supabase
+    .from("review_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("title", title)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existingReview) return existingReview;
+
+  return createReviewDraft(
+    supabase,
+    userId,
+    notes[0].folder_id,
+    notes.map((note) => ({ type: "note" as const, id: note.id })),
+    {
+      title,
+      reviewDate: date,
+    },
+  );
 }
 
 async function getDueReviews(supabase: Client, userId: string) {

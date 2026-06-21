@@ -22,109 +22,75 @@ body {
   min-height: 1.75rem;
 }
 
-.tiptap-editor ul,
-.tiptap-editor ol {
+.tiptap-editor ul:not(.tiptap-task-list),
+.tiptap-editor ol:not(.tiptap-task-list) {
   margin: 0.5rem 0;
   padding-left: 1.75rem;
+  list-style-position: outside;
 }
 
-.tiptap-editor ul {
+.tiptap-editor ul:not(.tiptap-task-list),
+.tiptap-editor .tiptap-bullet-list {
   list-style-type: disc !important;
 }
 
-.tiptap-editor ul ul {
+.tiptap-editor ul:not(.tiptap-task-list) ul,
+.tiptap-editor .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: circle !important;
 }
 
-.tiptap-editor ul ul ul {
+.tiptap-editor ul:not(.tiptap-task-list) ul ul,
+.tiptap-editor .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: square !important;
 }
 
-.tiptap-editor ul ul ul ul {
+.tiptap-editor ul:not(.tiptap-task-list) ul ul ul,
+.tiptap-editor .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: disc !important;
 }
 
-.tiptap-editor ul ul ul ul ul {
+.tiptap-editor ul:not(.tiptap-task-list) ul ul ul ul,
+.tiptap-editor .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: circle !important;
 }
 
-.tiptap-editor ul ul ul ul ul ul {
+.tiptap-editor ul:not(.tiptap-task-list) ul ul ul ul ul,
+.tiptap-editor .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: square !important;
 }
 
-.tiptap-editor ol {
+.tiptap-editor ol:not(.tiptap-task-list),
+.tiptap-editor .tiptap-ordered-list {
   list-style-type: decimal !important;
 }
 
-.tiptap-editor ol ol {
+.tiptap-editor ol:not(.tiptap-task-list) ol,
+.tiptap-editor .tiptap-ordered-list .tiptap-ordered-list {
   list-style-type: lower-alpha !important;
 }
 
-.tiptap-editor ol ol ol {
+.tiptap-editor ol:not(.tiptap-task-list) ol ol,
+.tiptap-editor .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list {
   list-style-type: lower-roman !important;
 }
 
-.tiptap-editor ol ol ol ol {
+.tiptap-editor ol:not(.tiptap-task-list) ol ol ol,
+.tiptap-editor .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list {
   list-style-type: decimal !important;
 }
 
-.tiptap-editor ol ol ol ol ol {
+.tiptap-editor ol:not(.tiptap-task-list) ol ol ol ol,
+.tiptap-editor .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list {
   list-style-type: lower-alpha !important;
 }
 
-.tiptap-editor ol ol ol ol ol ol {
+.tiptap-editor ol:not(.tiptap-task-list) ol ol ol ol ol,
+.tiptap-editor .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list .tiptap-ordered-list {
   list-style-type: lower-roman !important;
 }
 
-.tiptap-editor ol li::marker {
-  content: counter(list-item, decimal) ". ";
-}
-
-.tiptap-editor ol ol li::marker {
-  content: counter(list-item, lower-alpha) ". ";
-}
-
-.tiptap-editor ol ol ol li::marker {
-  content: counter(list-item, lower-roman) ". ";
-}
-
-.tiptap-editor ol ol ol ol li::marker {
-  content: counter(list-item, decimal) ". ";
-}
-
-.tiptap-editor ol ol ol ol ol li::marker {
-  content: counter(list-item, lower-alpha) ". ";
-}
-
-.tiptap-editor ol ol ol ol ol ol li::marker {
-  content: counter(list-item, lower-roman) ". ";
-}
-
-.tiptap-editor ul li::marker {
-  content: "● ";
-}
-
-.tiptap-editor ul ul li::marker {
-  content: "○ ";
-}
-
-.tiptap-editor ul ul ul li::marker {
-  content: "■ ";
-}
-
-.tiptap-editor ul ul ul ul li::marker {
-  content: "● ";
-}
-
-.tiptap-editor ul ul ul ul ul li::marker {
-  content: "○ ";
-}
-
-.tiptap-editor ul ul ul ul ul ul li::marker {
-  content: "■ ";
-}
-
-.tiptap-editor li {
+.tiptap-editor li:not(.tiptap-task-item) {
+  display: list-item;
   padding-left: 0.15rem;
 }
 

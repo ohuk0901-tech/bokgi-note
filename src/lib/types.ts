@@ -34,6 +34,13 @@ export type Folder = {
   delete_after: string | null;
 };
 
+export type TemplateKind =
+  | "investment_journal"
+  | "weekly_review"
+  | "next_week_plan"
+  | "free_note"
+  | "custom";
+
 export type Template = {
   id: string;
   user_id: string;
@@ -42,6 +49,7 @@ export type Template = {
   content_json: Json;
   content_text: string;
   default_folder_id: string | null;
+  template_kind: TemplateKind;
   is_primary: boolean;
   usage_count: number;
   allow_multiple_per_day: boolean;

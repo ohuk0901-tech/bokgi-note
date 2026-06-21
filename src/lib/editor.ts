@@ -1,4 +1,4 @@
-import type { Json } from "@/lib/types";
+import type { Json, TemplateKind } from "@/lib/types";
 
 export type EditorPayload = {
   content: string;
@@ -178,6 +178,7 @@ export const DEFAULT_TEMPLATE_NAMES = {
 export const DEFAULT_TEMPLATE_SPECS = [
   {
     name: DEFAULT_TEMPLATE_NAMES.investment,
+    kind: "investment_journal" as TemplateKind,
     isPrimary: true,
     allowMultiplePerDay: false,
     reviewSchedulePreset: "1w_3m_1y" as const,
@@ -210,6 +211,7 @@ export const DEFAULT_TEMPLATE_SPECS = [
   },
   {
     name: DEFAULT_TEMPLATE_NAMES.weeklyReview,
+    kind: "weekly_review" as TemplateKind,
     isPrimary: false,
     allowMultiplePerDay: false,
     reviewSchedulePreset: "none" as const,
@@ -230,6 +232,7 @@ export const DEFAULT_TEMPLATE_SPECS = [
   },
   {
     name: DEFAULT_TEMPLATE_NAMES.nextWeekPlan,
+    kind: "next_week_plan" as TemplateKind,
     isPrimary: false,
     allowMultiplePerDay: false,
     reviewSchedulePreset: "none" as const,
@@ -246,6 +249,7 @@ export const DEFAULT_TEMPLATE_SPECS = [
   },
   {
     name: DEFAULT_TEMPLATE_NAMES.freeMemo,
+    kind: "free_note" as TemplateKind,
     isPrimary: false,
     allowMultiplePerDay: true,
     reviewSchedulePreset: "none" as const,

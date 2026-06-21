@@ -2,21 +2,21 @@ import {
   addDaysISO,
   addMonthsISO,
   addYearsISO,
+  deleteAfter30Days,
   todayISO,
   weekday,
   weekStartISO,
 } from "@/lib/date";
 import {
-  DEFAULT_TEMPLATE_NAMES,
   DEFAULT_TEMPLATE_SPECS,
   toEditorPayload,
 } from "@/lib/editor";
 import type { Client } from "@/lib/data/shared";
-import type { Note, Template } from "@/lib/types";
+import type { Json, Note, Template, TemplateKind } from "@/lib/types";
 
-const WEEKLY_ROUTINE_NAMES = new Set<string>([
-  DEFAULT_TEMPLATE_NAMES.weeklyReview,
-  DEFAULT_TEMPLATE_NAMES.nextWeekPlan,
+const WEEKLY_ROUTINE_KINDS = new Set<TemplateKind>([
+  "weekly_review",
+  "next_week_plan",
 ]);
 
 export async function ensureFolderByName(
@@ -57,7 +57,16 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
 
   for (const [index, spec] of DEFAULT_TEMPLATE_SPECS.entries()) {
     const folder = await ensureFolderByName(supabase, userId, spec.name, index + 1);
-    const { data: existing, error: readError } = await supabase
+    const { data: existingByKind, error: kindReadError } = await supabase
+      .from("templates")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("template_kind", spec.kind)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (kindReadError) throw kindReadError;
+
+    const { data: existingByName, error: readError } = await supabase
       .from("templates")
       .select("*")
       .eq("user_id", userId)
@@ -67,12 +76,16 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
 
     if (readError) throw readError;
 
+    const existing = existingByKind ?? existingByName;
     const payload = toEditorPayload(spec.contentJson);
     if (existing) {
-      if (!existing.default_folder_id) {
+      const updates: Partial<Template> = {};
+      if (!existing.default_folder_id) updates.default_folder_id = folder.id;
+      if (existing.template_kind !== spec.kind) updates.template_kind = spec.kind;
+      if (Object.keys(updates).length) {
         const { error } = await supabase
           .from("templates")
-          .update({ default_folder_id: folder.id })
+          .update(updates)
           .eq("id", existing.id);
         if (error) throw error;
       }
@@ -82,6 +95,7 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
     const { error } = await supabase.from("templates").insert({
       user_id: userId,
       name: spec.name,
+      template_kind: spec.kind,
       content: payload.content,
       content_json: payload.content_json,
       content_text: payload.content_text,
@@ -108,7 +122,7 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
     .from("templates")
     .select("id")
     .eq("user_id", userId)
-    .eq("name", DEFAULT_TEMPLATE_NAMES.investment)
+    .eq("template_kind", "investment_journal")
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -134,26 +148,6 @@ export async function getTemplates(supabase: Client) {
   return data ?? [];
 }
 
-export async function setPrimaryTemplate(
-  supabase: Client,
-  userId: string,
-  templateId: string,
-) {
-  const { error: clearError } = await supabase
-    .from("templates")
-    .update({ is_primary: false })
-    .eq("user_id", userId)
-    .is("deleted_at", null);
-  if (clearError) throw clearError;
-
-  const { error } = await supabase
-    .from("templates")
-    .update({ is_primary: true })
-    .eq("id", templateId)
-    .eq("user_id", userId);
-  if (error) throw error;
-}
-
 export async function updateTemplateContent(
   supabase: Client,
   templateId: string,
@@ -166,23 +160,121 @@ export async function updateTemplateContent(
   if (error) throw error;
 }
 
+export async function createTemplate(
+  supabase: Client,
+  userId: string,
+  values: { name: string; contentJson?: Json; contentText?: string },
+) {
+  const name = values.name.trim();
+  if (!name) throw new Error("템플릿 이름을 입력해주세요.");
+
+  const folder = await ensureFolderByName(supabase, userId, name);
+  const payload = toEditorPayload(values.contentJson ?? { type: "doc", content: [] }, values.contentText ?? "");
+  const { data, error } = await supabase
+    .from("templates")
+    .insert({
+      user_id: userId,
+      name,
+      template_kind: "custom",
+      content: payload.content,
+      content_json: payload.content_json,
+      content_text: payload.content_text,
+      default_folder_id: folder.id,
+      is_primary: false,
+      allow_multiple_per_day: false,
+      review_schedule_preset: "none",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateTemplateDetails(
+  supabase: Client,
+  userId: string,
+  template: Template,
+  values: Pick<Template, "content" | "content_json" | "content_text"> & {
+    name: string;
+  },
+) {
+  const name = values.name.trim();
+  if (!name) throw new Error("템플릿 이름을 입력해주세요.");
+
+  const { error } = await supabase
+    .from("templates")
+    .update({
+      name,
+      content: values.content,
+      content_json: values.content_json,
+      content_text: values.content_text,
+    })
+    .eq("id", template.id)
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  if (template.default_folder_id && template.name !== name) {
+    const { data: folder, error: folderReadError } = await supabase
+      .from("folders")
+      .select("*")
+      .eq("id", template.default_folder_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (folderReadError) throw folderReadError;
+
+    if (folder?.name === template.name) {
+      const { error: folderUpdateError } = await supabase
+        .from("folders")
+        .update({ name })
+        .eq("id", folder.id)
+        .eq("user_id", userId);
+      if (folderUpdateError) throw folderUpdateError;
+    }
+  }
+
+  return { ...template, ...values, name };
+}
+
+export async function trashTemplate(
+  supabase: Client,
+  userId: string,
+  template: Template,
+) {
+  if (template.template_kind !== "custom") {
+    throw new Error("기본 템플릿은 삭제할 수 없습니다.");
+  }
+  if (template.is_primary) {
+    throw new Error("대표 템플릿은 삭제할 수 없습니다. 다른 템플릿을 대표로 설정한 뒤 삭제해주세요.");
+  }
+
+  const deleted_at = new Date().toISOString();
+  const delete_after = deleteAfter30Days();
+  const { error } = await supabase
+    .from("templates")
+    .update({ deleted_at, delete_after })
+    .eq("id", template.id)
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
 export function shouldShowWeeklyRoutines(date = todayISO()) {
   return [0, 1, 5, 6].includes(weekday(date));
 }
 
 export function routineKeyForTemplate(template: Template, date = todayISO()) {
   if (template.allow_multiple_per_day) return null;
-  if (template.name === DEFAULT_TEMPLATE_NAMES.weeklyReview) {
+  if (template.template_kind === "weekly_review") {
     const day = weekday(date);
     const targetDate = day === 1 ? addDaysISO(date, -7) : date;
     return `template:${template.id}:week-review:${weekStartISO(targetDate)}`;
   }
-  if (template.name === DEFAULT_TEMPLATE_NAMES.nextWeekPlan) {
+  if (template.template_kind === "next_week_plan") {
     const day = weekday(date);
     const targetDate = day === 5 || day === 6 || day === 0 ? addDaysISO(date, 7) : date;
     return `template:${template.id}:week-plan:${weekStartISO(targetDate)}`;
   }
-  if (WEEKLY_ROUTINE_NAMES.has(template.name)) {
+  if (WEEKLY_ROUTINE_KINDS.has(template.template_kind)) {
     return `template:${template.id}:week:${weekStartISO(date)}`;
   }
   return `template:${template.id}:day:${date}`;

@@ -6,6 +6,8 @@ create table if not exists public.templates (
   content_json jsonb not null default '{"type":"doc","content":[]}'::jsonb,
   content_text text not null default '',
   default_folder_id uuid references public.folders(id) on delete set null,
+  template_kind text not null default 'custom'
+    check (template_kind in ('investment_journal', 'weekly_review', 'next_week_plan', 'free_note', 'custom')),
   is_primary boolean not null default false,
   usage_count integer not null default 0,
   allow_multiple_per_day boolean not null default false,
@@ -31,6 +33,19 @@ create table if not exists public.review_schedules (
   unique (note_id, review_type)
 );
 
+alter table public.templates add column if not exists template_kind text not null default 'custom'
+  check (template_kind in ('investment_journal', 'weekly_review', 'next_week_plan', 'free_note', 'custom'));
+
+update public.templates
+set template_kind = case
+  when name = '투자 일기' then 'investment_journal'
+  when name = '한 주 마무리' then 'weekly_review'
+  when name = '다음 주 계획' then 'next_week_plan'
+  when name = '자유 메모' then 'free_note'
+  else template_kind
+end
+where template_kind = 'custom';
+
 alter table public.notes add column if not exists template_id uuid references public.templates(id) on delete set null;
 alter table public.notes add column if not exists content_json jsonb not null default '{"type":"doc","content":[]}'::jsonb;
 alter table public.notes add column if not exists content_text text not null default '';
@@ -42,6 +57,7 @@ alter table public.review_sessions add column if not exists content_json jsonb n
 alter table public.review_sessions add column if not exists content_text text not null default '';
 
 create index if not exists templates_user_active_idx on public.templates(user_id, deleted_at, usage_count desc, created_at asc);
+create index if not exists templates_user_kind_active_idx on public.templates(user_id, template_kind, deleted_at);
 create unique index if not exists templates_user_name_active_unique_idx
   on public.templates(user_id, name)
   where deleted_at is null;

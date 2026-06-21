@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
@@ -27,6 +27,7 @@ import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
 export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { supabase, configured, user, loading } = useRequireAuth();
   const [review, setReview] = useState<ReviewSession | null>(null);
   const [sources, setSources] = useState<ReviewSourceItem[]>([]);
@@ -39,6 +40,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [editorPosition, setEditorPosition] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
   const latest = useRef({
     review: null as ReviewSession | null,
     title: "",
@@ -109,7 +111,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     [currentReviewId, supabase],
   );
 
-  useAutoSave({
+  const saveStatus = useAutoSave({
     enabled: Boolean(supabase && review && isLoaded),
     save: saveCurrentReview,
     skipInitial: true,
@@ -217,7 +219,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   async function handleTrash() {
     if (!window.confirm("이 복기 세션을 휴지통으로 이동할까요?")) return;
     await trashReview(client, currentReview.id);
-    router.push(`/folders/${currentReview.folder_id}`);
+    router.push(backHref ?? `/folders/${currentReview.folder_id}`);
   }
 
   function handleEditorChange(value: { contentJson: Json; contentText: string }) {
@@ -239,7 +241,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     <AppChrome>
       <div className="mb-4 flex items-center justify-between">
         <Link
-          href={`/folders/${review.folder_id}`}
+          href={backHref ?? `/folders/${review.folder_id}`}
           className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
           aria-label="뒤로"
           title="뒤로"
@@ -270,6 +272,11 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
           onChange={(event) => setReviewDate(event.target.value)}
           className="mt-3 rounded border border-[#d4d8d1] bg-white px-3 py-2 text-sm text-[#53584f] outline-none"
         />
+        {saveStatus === "error" ? (
+          <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            저장하지 못했습니다. 인터넷 연결을 확인해주세요.
+          </p>
+        ) : null}
 
         <div className="mt-6">
           {sources.map((source, index) => (

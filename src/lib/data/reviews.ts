@@ -15,14 +15,15 @@ export async function createReviewDraft(
   userId: string,
   folderId: string,
   sources: { type: "note" | "review_session"; id: string }[],
+  options: { title?: string; reviewDate?: string } = {},
 ) {
-  const reviewDate = todayISO();
+  const reviewDate = options.reviewDate ?? todayISO();
   const { data: review, error } = await supabase
     .from("review_sessions")
     .insert({
       user_id: userId,
       folder_id: folderId,
-      title: defaultReviewTitle(reviewDate),
+      title: options.title ?? defaultReviewTitle(reviewDate),
       content: "",
       content_json: EMPTY_EDITOR_DOC,
       content_text: "",

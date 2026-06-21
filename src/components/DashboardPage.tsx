@@ -19,6 +19,7 @@ import { useRequireAuth } from "@/components/useRequireAuth";
 import {
   createOrOpenTemplateNote,
   getDashboardData,
+  startWeeklyReview,
   type DashboardRoutineItem,
 } from "@/lib/data";
 import { formatKoreanDate } from "@/lib/date";
@@ -38,6 +39,7 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
+  const [busyWeeklyReview, setBusyWeeklyReview] = useState(false);
 
   useEffect(() => {
     if (!supabase || !user) return;
@@ -73,6 +75,17 @@ export function DashboardPage() {
     }
   }
 
+  async function openWeeklyReview() {
+    setBusyWeeklyReview(true);
+    try {
+      const review = await startWeeklyReview(client, currentUser.id);
+      router.push(`/reviews/${review.id}?from=dashboard`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "이번 주 복기를 시작하지 못했습니다.");
+      setBusyWeeklyReview(false);
+    }
+  }
+
   const primaryRoutine = data.primaryRoutine;
 
   return (
@@ -80,7 +93,10 @@ export function DashboardPage() {
       <div className="space-y-7">
         <section>
           <p className="text-sm font-medium text-[#2f6b4f]">오늘</p>
-          <h1 className="mt-1 text-2xl font-semibold">기록과 복기</h1>
+          <h1 className="mt-1 text-2xl font-semibold">오늘 기록</h1>
+          <p className="mt-1 text-sm leading-6 text-[#63685f]">
+            오늘의 시장과 내 판단을 짧게 남깁니다.
+          </p>
           {primaryRoutine ? (
             <button
               onClick={() => openTemplate(primaryRoutine.template)}
@@ -101,9 +117,31 @@ export function DashboardPage() {
         </section>
 
         <DashboardSection
+          icon={<BookOpenCheck size={18} />}
+          title="이번 주 복기"
+          description="이번 주 투자 일기를 모아 읽고 생각을 정리합니다."
+          empty=""
+        >
+          <button
+            onClick={openWeeklyReview}
+            disabled={busyWeeklyReview}
+            className="flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-50"
+          >
+            <div>
+              <p className="font-medium">이번 주 복기 시작</p>
+              <p className="mt-1 text-sm leading-6 text-[#63685f]">
+                이번 주 투자 일기를 자동으로 불러와 복기 세션을 만듭니다.
+              </p>
+            </div>
+            <ArrowRight className="shrink-0 text-[#72786f]" size={17} />
+          </button>
+        </DashboardSection>
+
+        <DashboardSection
           icon={<CalendarClock size={18} />}
-          title="오늘/밀린 복기"
-          empty="오늘 볼 복기가 없습니다."
+          title="다시 볼 기록"
+          description="1주, 3개월, 1년 뒤 다시 보기로 한 기록입니다."
+          empty="다시 볼 기록이 없습니다."
         >
           {data.dueReviews.map((item) => (
             <Link
@@ -124,7 +162,8 @@ export function DashboardPage() {
 
         <DashboardSection
           icon={<ClipboardList size={18} />}
-          title="주간 루틴"
+          title="주간 기록"
+          description="금요일부터 월요일까지 한 주 마무리와 다음 주 계획을 작성합니다."
           empty="금요일부터 월요일까지 표시됩니다."
         >
           {data.weeklyRoutines.map((item) => (
@@ -140,6 +179,7 @@ export function DashboardPage() {
         <DashboardSection
           icon={<Pin size={18} />}
           title="대표 메모"
+          description="자주 확인할 투자 원칙과 행동 기준을 고정해둡니다."
           empty="메모 화면에서 핀 버튼을 눌러 고정할 수 있습니다."
         >
           {data.pinnedNotes.map((note) => (
@@ -150,6 +190,7 @@ export function DashboardPage() {
         <DashboardSection
           icon={<BookOpenCheck size={18} />}
           title="최근 기록"
+          description="최근 작성하거나 수정한 메모와 복기입니다."
           empty="아직 기록이 없습니다."
         >
           {data.recentItems.map((item) => (
@@ -160,6 +201,7 @@ export function DashboardPage() {
         <DashboardSection
           icon={<Star size={18} />}
           title="자주 쓰는 템플릿"
+          description="반복해서 쓰는 기록 양식을 바로 시작합니다."
           empty="템플릿이 없습니다."
         >
           {data.frequentTemplates.length ? (
@@ -186,11 +228,13 @@ export function DashboardPage() {
 function DashboardSection({
   icon,
   title,
+  description,
   empty,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
+  description?: string;
   empty: string;
   children: React.ReactNode;
 }) {
@@ -201,6 +245,9 @@ function DashboardSection({
         {icon}
         {title}
       </div>
+      {description ? (
+        <p className="mb-2 text-sm leading-6 text-[#63685f]">{description}</p>
+      ) : null}
       <div className="rounded border border-[#d9dcd6] bg-white px-4 py-2">
         {childList.length ? (
           childList
@@ -258,7 +305,7 @@ function UnifiedLink({ item }: { item: UnifiedItem }) {
       href={
         item.item_type === "note"
           ? `/notes/${item.id}?from=dashboard`
-          : `/reviews/${item.id}`
+          : `/reviews/${item.id}?from=dashboard`
       }
       className="block border-t border-[#e3e5e0] py-3 first:border-t-0"
     >
