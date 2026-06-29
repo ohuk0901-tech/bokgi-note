@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>복기노트 디자인 시스템 후보 비교</title>
+  <style>
+    :root {
+      --page-bg: #f5f5f7;
+      --page-surface: #ffffff;
+      --page-fg: #1d1d1f;
+      --page-muted: #6e6e73;
+      --page-border: #d2d2d7;
+
+      --apple-bg: #ffffff;
+      --apple-surface: #f5f5f7;
+      --apple-card: #fbfbfd;
+      --apple-fg: #1d1d1f;
+      --apple-muted: #6e6e73;
+      --apple-border: #e8e8ed;
+      --apple-accent: #0071e3;
+      --apple-accent-on: #ffffff;
+
+      --neutral-bg: #fafafa;
+      --neutral-surface: #ffffff;
+      --neutral-card: #ffffff;
+      --neutral-fg: #171717;
+      --neutral-muted: #737373;
+      --neutral-border: #e5e5e5;
+      --neutral-accent: #171717;
+      --neutral-accent-on: #ffffff;
+
+      --notion-bg: #fbfbfa;
+      --notion-surface: #ffffff;
+      --notion-card: #f7f6f3;
+      --notion-fg: #2f3437;
+      --notion-muted: #787774;
+      --notion-border: #e9e5de;
+      --notion-accent: #0f766e;
+      --notion-accent-on: #ffffff;
+
+      --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      background: var(--page-bg);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: var(--page-bg);
+      color: var(--page-fg);
+      font-family: var(--font-system);
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button {
+      border: 0;
+      padding: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .page {
+      width: min(100%, 1280px);
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+    }
+
+    .intro {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .intro h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1.1;
+      font-weight: 700;
+    }
+
+    .intro p {
+      max-width: 62ch;
+      color: var(--page-muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .candidate {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .candidate-note {
+      display: grid;
+      gap: 6px;
+      min-height: 94px;
+      padding: 14px;
+      border: 1px solid var(--page-border);
+      border-radius: 14px;
+      background: var(--page-surface);
+    }
+
+    .candidate-note h2 {
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .candidate-note p {
+      color: var(--page-muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .candidate-note strong { color: var(--page-fg); }
+
+    .phone-wrap {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+    }
+
+    .phone {
+      --c-bg: var(--apple-bg);
+      --c-surface: var(--apple-surface);
+      --c-card: var(--apple-card);
+      --c-fg: var(--apple-fg);
+      --c-muted: var(--apple-muted);
+      --c-border: var(--apple-border);
+      --c-accent: var(--apple-accent);
+      --c-accent-on: var(--apple-accent-on);
+      width: min(100%, 390px);
+      min-height: 844px;
+      overflow: hidden;
+      border: 1px solid var(--page-border);
+      border-radius: 34px;
+      background: var(--c-bg);
+      box-shadow: 0 22px 70px color-mix(in oklab, var(--page-fg), transparent 90%);
+      color: var(--c-fg);
+    }
+
+    .phone.neutral {
+      --c-bg: var(--neutral-bg);
+      --c-surface: var(--neutral-surface);
+      --c-card: var(--neutral-card);
+      --c-fg: var(--neutral-fg);
+      --c-muted: var(--neutral-muted);
+      --c-border: var(--neutral-border);
+      --c-accent: var(--neutral-accent);
+      --c-accent-on: var(--neutral-accent-on);
+    }
+
+    .phone.notion {
+      --c-bg: var(--notion-bg);
+      --c-surface: var(--notion-surface);
+      --c-card: var(--notion-card);
+      --c-fg: var(--notion-fg);
+      --c-muted: var(--notion-muted);
+      --c-border: var(--notion-border);
+      --c-accent: var(--notion-accent);
+      --c-accent-on: var(--notion-accent-on);
+    }
+
+    .safe {
+      padding: 14px 18px 28px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 26px;
+      color: var(--c-fg);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--c-muted);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 0 18px;
+    }
+
+    .brand h3 {
+      font-size: 25px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .brand p {
+      margin-top: 2px;
+      color: var(--c-muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .menu-button {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: color-mix(in oklab, var(--c-surface), var(--c-bg) 22%);
+      color: var(--c-fg);
+    }
+
+    .phone main {
+      display: grid;
+      gap: 10px;
+    }
+
+    .panel {
+      border: 1px solid var(--c-border);
+      background: var(--c-card);
+      border-radius: 18px;
+    }
+
+    .neutral .panel {
+      border-radius: 12px;
+      box-shadow: 0 1px 2px color-mix(in oklab, var(--c-fg), transparent 94%);
+    }
+
+    .notion .panel {
+      border-radius: 10px;
+      border-color: color-mix(in oklab, var(--c-border), var(--c-bg) 30%);
+    }
+
+    .today-card {
+      display: grid;
+      gap: 16px;
+      min-height: 182px;
+      padding: 17px;
+      align-content: space-between;
+      background: var(--c-surface);
+    }
+
+    .label {
+      color: var(--c-muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .today-card h2 {
+      margin-top: 8px;
+      font-size: 30px;
+      line-height: 1.05;
+      font-weight: 700;
+    }
+
+    .date-mark {
+      margin-top: 2px;
+      color: var(--c-fg);
+      font-family: var(--font-mono);
+      font-size: 42px;
+      line-height: 0.96;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .notion .primary-button,
+    .notion .secondary-button {
+      border-radius: 8px;
+    }
+
+    .primary-button {
+      width: 100%;
+      background: var(--c-fg);
+      color: var(--c-bg);
+    }
+
+    .neutral .primary-button,
+    .notion .primary-button {
+      background: var(--c-accent);
+      color: var(--c-accent-on);
+    }
+
+    .secondary-button {
+      min-width: 76px;
+      padding: 0 17px;
+      background: var(--c-accent);
+      color: var(--c-accent-on);
+    }
+
+    .neutral .secondary-button {
+      border: 1px solid var(--c-border);
+      background: var(--c-surface);
+      color: var(--c-fg);
+    }
+
+    .review-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 14px;
+      min-height: 78px;
+      padding: 14px;
+    }
+
+    .review-card h2,
+    .section-card h2 {
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .meta {
+      margin-top: 2px;
+      color: var(--c-muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .section-card {
+      padding: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .text-button {
+      color: var(--c-muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .list {
+      margin-top: 9px;
+      display: grid;
+    }
+
+    .list-row {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 52px;
+      border-top: 1px solid var(--c-border);
+      text-align: left;
+    }
+
+    .pin-row {
+      grid-template-columns: 1fr auto;
+      min-height: 48px;
+    }
+
+    .list-row:first-child {
+      border-top: 0;
+    }
+
+    .date {
+      color: var(--c-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row-title {
+      overflow: hidden;
+      color: var(--c-fg);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chevron {
+      color: var(--c-muted);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 10;
+      width: min(calc(100% - 32px), 360px);
+      padding: 12px 14px;
+      transform: translate(-50%, 14px);
+      border-radius: 12px;
+      background: var(--page-fg);
+      color: var(--page-surface);
+      opacity: 0;
+      pointer-events: none;
+      text-align: center;
+      font-size: 14px;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1180px) {
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .candidate {
+        grid-template-columns: minmax(0, 360px) minmax(320px, 390px);
+        justify-content: center;
+        align-items: start;
+      }
+
+      .candidate-note {
+        position: sticky;
+        top: 18px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding-inline: 14px;
+      }
+
+      .candidate {
+        grid-template-columns: 1fr;
+      }
+
+      .candidate-note {
+        position: static;
+        min-height: 0;
+      }
+
+      .phone {
+        width: min(100%, 390px);
+        min-height: 844px;
+        border-radius: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="intro">
+      <h1>복기노트 디자인 시스템 후보</h1>
+      <p>정보 구조는 모두 같습니다. `투자 일기 작성하기`, `이번 주 복기`, `복기 대기`, `대표 메모`, `최근 기록`만 남겨두고, 시각 시스템이 어떻게 달라지는지만 비교합니다.</p>
+    </header>
+
+    <div class="compare-grid" aria-label="디자인 시스템 후보 비교">
+      <article class="candidate">
+        <div class="candidate-note">
+          <h2>A. Open Design Apple / Notes형</h2>
+          <p><strong>가장 추천.</strong> iPhone PWA와 맞고, 매일 쓰는 메모 앱처럼 조용합니다. 다만 파란 액션은 적게 써야 합니다.</p>
+        </div>
+        <div class="phone-wrap">
+          <div class="phone apple" aria-label="Open Design Apple Notes형 대시보드 후보">
+            <div class="safe">
+              <div class="status">
+                <span>9:41</span>
+                <div class="status-icons" aria-hidden="true">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="1" y="6" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="4" width="2" height="6" rx="1" fill="currentColor"/><rect x="9" y="2" width="2" height="8" rx="1" fill="currentColor"/><rect x="13" y="0" width="2" height="10" rx="1" fill="currentColor"/></svg>
+                  <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="2" width="19" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="14" height="4" rx="1" fill="currentColor"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+              <header class="topbar">
+                <div class="brand"><h3>복기노트</h3><p>6.23 화</p></div>
+                <button class="menu-button" type="button" data-toast="관리 메뉴를 열었어요." aria-label="관리 메뉴">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14M5 7h14M5 17h14" stroke-linecap="round"/></svg>
+                </button>
+              </header>
+              <main>
+                <section class="panel today-card" data-od-id="apple-today">
+                  <div><span class="label">오늘</span><h2>투자 일기</h2><div class="date-mark">06.23</div></div>
+                  <button class="primary-button" type="button" data-today-button>투자 일기 작성하기</button>
+                </section>
+                <section class="panel review-card" data-od-id="apple-weekly">
+                  <div><h2>이번 주 복기</h2><p class="meta">기록 4개</p></div>
+                  <button class="secondary-button" type="button" data-toast="이번 주 복기를 시작해요.">시작</button>
+                </section>
+                <section class="panel section-card" data-od-id="apple-pending">
+                  <div class="row"><h2>복기 대기</h2></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="하락장 메모를 열었어요."><span class="date">6.19</span><p class="row-title">하락장 메모</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="매수 보류를 열었어요."><span class="date">6.17</span><p class="row-title">매수 보류</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="apple-pins">
+                  <div class="row"><h2>대표 메모</h2><button class="text-button" type="button" data-toast="대표 메모를 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row pin-row" type="button" data-toast="급등장 매수 기준을 열었어요."><p class="row-title">급등장 매수 기준</p><span class="chevron">›</span></button>
+                    <button class="list-row pin-row" type="button" data-toast="손절 전 확인할 것을 열었어요."><p class="row-title">손절 전 확인할 것</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="apple-recent">
+                  <div class="row"><h2>최근 기록</h2><button class="text-button" type="button" data-toast="전체 기록을 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="관망 기록을 열었어요."><span class="date">6.22</span><p class="row-title">관망</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="환율 뉴스 기록을 열었어요."><span class="date">6.21</span><p class="row-title">환율 뉴스</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+              </main>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="candidate">
+        <div class="candidate-note">
+          <h2>B. shadcn neutral형</h2>
+          <p><strong>구현은 편함.</strong> 폼, 메뉴, 다이얼로그 패턴은 좋지만 홈까지 이 톤이면 SaaS 관리 화면처럼 보일 수 있습니다.</p>
+        </div>
+        <div class="phone-wrap">
+          <div class="phone neutral" aria-label="shadcn neutral형 대시보드 후보">
+            <div class="safe">
+              <div class="status">
+                <span>9:41</span>
+                <div class="status-icons" aria-hidden="true">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="1" y="6" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="4" width="2" height="6" rx="1" fill="currentColor"/><rect x="9" y="2" width="2" height="8" rx="1" fill="currentColor"/><rect x="13" y="0" width="2" height="10" rx="1" fill="currentColor"/></svg>
+                  <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="2" width="19" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="14" height="4" rx="1" fill="currentColor"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+              <header class="topbar">
+                <div class="brand"><h3>복기노트</h3><p>6.23 화</p></div>
+                <button class="menu-button" type="button" data-toast="관리 메뉴를 열었어요." aria-label="관리 메뉴">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14M5 7h14M5 17h14" stroke-linecap="round"/></svg>
+                </button>
+              </header>
+              <main>
+                <section class="panel today-card" data-od-id="neutral-today">
+                  <div><span class="label">오늘</span><h2>투자 일기</h2><div class="date-mark">06.23</div></div>
+                  <button class="primary-button" type="button" data-today-button>투자 일기 작성하기</button>
+                </section>
+                <section class="panel review-card" data-od-id="neutral-weekly">
+                  <div><h2>이번 주 복기</h2><p class="meta">기록 4개</p></div>
+                  <button class="secondary-button" type="button" data-toast="이번 주 복기를 시작해요.">시작</button>
+                </section>
+                <section class="panel section-card" data-od-id="neutral-pending">
+                  <div class="row"><h2>복기 대기</h2></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="하락장 메모를 열었어요."><span class="date">6.19</span><p class="row-title">하락장 메모</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="매수 보류를 열었어요."><span class="date">6.17</span><p class="row-title">매수 보류</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="neutral-pins">
+                  <div class="row"><h2>대표 메모</h2><button class="text-button" type="button" data-toast="대표 메모를 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row pin-row" type="button" data-toast="급등장 매수 기준을 열었어요."><p class="row-title">급등장 매수 기준</p><span class="chevron">›</span></button>
+                    <button class="list-row pin-row" type="button" data-toast="손절 전 확인할 것을 열었어요."><p class="row-title">손절 전 확인할 것</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="neutral-recent">
+                  <div class="row"><h2>최근 기록</h2><button class="text-button" type="button" data-toast="전체 기록을 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="관망 기록을 열었어요."><span class="date">6.22</span><p class="row-title">관망</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="환율 뉴스 기록을 열었어요."><span class="date">6.21</span><p class="row-title">환율 뉴스</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+              </main>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="candidate">
+        <div class="candidate-note">
+          <h2>C. Notion workspace형</h2>
+          <p><strong>에디터에는 참고 가능.</strong> 템플릿과 긴 글에는 어울리지만 홈에 쓰면 폴더/문서 관리 느낌이 강해집니다.</p>
+        </div>
+        <div class="phone-wrap">
+          <div class="phone notion" aria-label="Notion workspace형 대시보드 후보">
+            <div class="safe">
+              <div class="status">
+                <span>9:41</span>
+                <div class="status-icons" aria-hidden="true">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="1" y="6" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="4" width="2" height="6" rx="1" fill="currentColor"/><rect x="9" y="2" width="2" height="8" rx="1" fill="currentColor"/><rect x="13" y="0" width="2" height="10" rx="1" fill="currentColor"/></svg>
+                  <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="2" width="19" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="14" height="4" rx="1" fill="currentColor"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+              <header class="topbar">
+                <div class="brand"><h3>복기노트</h3><p>6.23 화</p></div>
+                <button class="menu-button" type="button" data-toast="관리 메뉴를 열었어요." aria-label="관리 메뉴">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14M5 7h14M5 17h14" stroke-linecap="round"/></svg>
+                </button>
+              </header>
+              <main>
+                <section class="panel today-card" data-od-id="notion-today">
+                  <div><span class="label">오늘</span><h2>투자 일기</h2><div class="date-mark">06.23</div></div>
+                  <button class="primary-button" type="button" data-today-button>투자 일기 작성하기</button>
+                </section>
+                <section class="panel review-card" data-od-id="notion-weekly">
+                  <div><h2>이번 주 복기</h2><p class="meta">기록 4개</p></div>
+                  <button class="secondary-button" type="button" data-toast="이번 주 복기를 시작해요.">시작</button>
+                </section>
+                <section class="panel section-card" data-od-id="notion-pending">
+                  <div class="row"><h2>복기 대기</h2></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="하락장 메모를 열었어요."><span class="date">6.19</span><p class="row-title">하락장 메모</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="매수 보류를 열었어요."><span class="date">6.17</span><p class="row-title">매수 보류</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="notion-pins">
+                  <div class="row"><h2>대표 메모</h2><button class="text-button" type="button" data-toast="대표 메모를 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row pin-row" type="button" data-toast="급등장 매수 기준을 열었어요."><p class="row-title">급등장 매수 기준</p><span class="chevron">›</span></button>
+                    <button class="list-row pin-row" type="button" data-toast="손절 전 확인할 것을 열었어요."><p class="row-title">손절 전 확인할 것</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+                <section class="panel section-card" data-od-id="notion-recent">
+                  <div class="row"><h2>최근 기록</h2><button class="text-button" type="button" data-toast="전체 기록을 열었어요.">전체</button></div>
+                  <div class="list">
+                    <button class="list-row" type="button" data-toast="관망 기록을 열었어요."><span class="date">6.22</span><p class="row-title">관망</p><span class="chevron">›</span></button>
+                    <button class="list-row" type="button" data-toast="환율 뉴스 기록을 열었어요."><span class="date">6.21</span><p class="row-title">환율 뉴스</p><span class="chevron">›</span></button>
+                  </div>
+                </section>
+              </main>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.getElementById("toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1300);
+    }
+
+    document.querySelectorAll("[data-toast]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.toast));
+    });
+
+    document.querySelectorAll("[data-today-button]").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.textContent = "이어쓰기";
+        showToast("투자 일기를 열었어요.");
+      });
+    });
+  </script>
+</body>
+</html>

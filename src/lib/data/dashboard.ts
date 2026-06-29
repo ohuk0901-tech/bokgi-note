@@ -1,12 +1,7 @@
 import { addDaysISO, formatKoreanDate, todayISO, weekStartISO } from "@/lib/date";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
 import { createReviewDraft } from "@/lib/data/reviews";
-import {
-  findRoutineNote,
-  getTemplates,
-  routineKeyForTemplate,
-  shouldShowWeeklyRoutines,
-} from "@/lib/data/templates";
+import { findRoutineNote, getTemplates } from "@/lib/data/templates";
 import type { Client } from "@/lib/data/shared";
 import type {
   DashboardReviewItem,
@@ -14,13 +9,6 @@ import type {
   ReviewSession,
   Template,
 } from "@/lib/types";
-
-export type DashboardRoutineItem = {
-  template: Template;
-  existingNote: Note | null;
-  href: string;
-  actionLabel: string;
-};
 
 export async function getDashboardData(supabase: Client, userId: string) {
   const templates = await getTemplates(supabase);
@@ -33,35 +21,19 @@ export async function getDashboardData(supabase: Client, userId: string) {
     ? await findRoutineNote(supabase, userId, primaryTemplate)
     : null;
 
-  const weeklyTemplates = shouldShowWeeklyRoutines()
-    ? templates.filter((template) =>
-        ["weekly_review", "next_week_plan"].includes(template.template_kind),
-      )
-    : [];
-
-  const weeklyRoutines = await Promise.all(
-    weeklyTemplates.map(async (template) => {
-      const existingNote = await findRoutineNote(supabase, userId, template);
-      return toRoutineItem(template, existingNote);
-    }),
-  );
-
-  const [dueReviews, pinnedNotes, recentItems] = await Promise.all([
+  const [dueReviews, pinnedNotes, recentItems, weeklyReviewNoteCount] = await Promise.all([
     getDueReviews(supabase, userId),
     getPinnedNotes(supabase, userId),
     getRecentItems(supabase, userId),
+    getWeeklyReviewNoteCount(supabase, userId),
   ]);
 
   return {
-    templates,
-    primaryTemplate,
-    primaryNote,
     primaryRoutine: primaryTemplate ? toRoutineItem(primaryTemplate, primaryNote) : null,
-    weeklyRoutines,
     dueReviews,
     pinnedNotes,
     recentItems,
-    frequentTemplates: templates.slice(0, 4),
+    weeklyReviewNoteCount,
   };
 }
 
@@ -177,6 +149,33 @@ export async function startWeeklyReview(
   );
 }
 
+async function getWeeklyReviewNoteCount(supabase: Client, userId: string, date = todayISO()) {
+  const weekStart = weekStartISO(date);
+  const weekEnd = addDaysISO(weekStart, 6);
+  const { data: templates, error: templateError } = await supabase
+    .from("templates")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("template_kind", "investment_journal")
+    .is("deleted_at", null);
+  if (templateError) throw templateError;
+
+  const templateIds = (templates ?? []).map((template) => template.id);
+  if (!templateIds.length) return 0;
+
+  const { count, error } = await supabase
+    .from("notes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .in("template_id", templateIds)
+    .gte("note_date", weekStart)
+    .lte("note_date", weekEnd)
+    .eq("is_draft", false)
+    .is("deleted_at", null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 async function getDueReviews(supabase: Client, userId: string) {
   const { data: schedules, error } = await supabase
     .from("review_schedules")
@@ -246,6 +245,5 @@ function toRoutineItem(template: Template, existingNote: Note | null) {
     existingNote,
     href: existingNote ? `/notes/${existingNote.id}` : "",
     actionLabel: `${template.name} ${action}`,
-    routineKey: routineKeyForTemplate(template),
   };
 }

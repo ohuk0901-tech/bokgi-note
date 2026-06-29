@@ -1,21 +1,56 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f4;
+  --background: #fbfaf7;
   --foreground: #1f1f1f;
+  --bokgi-bg: #fbfaf7;
+  --bokgi-surface: #ffffff;
+  --bokgi-surface-muted: #f7f7f4;
+  --bokgi-surface-hover: #f0f2ed;
+  --bokgi-ink: #1f1f1f;
+  --bokgi-ink-soft: #53584f;
+  --bokgi-muted: #72786f;
+  --bokgi-border: #d9dcd6;
+  --bokgi-border-soft: #e6e8e3;
+  --bokgi-primary: #1f1f1f;
+  --bokgi-primary-on: #ffffff;
+  --bokgi-accent: #2f6b4f;
+  --bokgi-accent-soft: #e8f0e9;
+  --bokgi-warning: #f5df92;
+  --bokgi-warning-ink: #69510f;
+  --radius-shell: 20px;
+  --radius-panel: 14px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
+  --color-bokgi-bg: var(--bokgi-bg);
+  --color-bokgi-surface: var(--bokgi-surface);
+  --color-bokgi-surface-muted: var(--bokgi-surface-muted);
+  --color-bokgi-surface-hover: var(--bokgi-surface-hover);
+  --color-bokgi-ink: var(--bokgi-ink);
+  --color-bokgi-ink-soft: var(--bokgi-ink-soft);
+  --color-bokgi-muted: var(--bokgi-muted);
+  --color-bokgi-border: var(--bokgi-border);
+  --color-bokgi-border-soft: var(--bokgi-border-soft);
+  --color-bokgi-primary: var(--bokgi-primary);
+  --color-bokgi-primary-on: var(--bokgi-primary-on);
+  --color-bokgi-accent: var(--bokgi-accent);
+  --color-bokgi-accent-soft: var(--bokgi-accent-soft);
+  --color-bokgi-warning: var(--bokgi-warning);
+  --color-bokgi-warning-ink: var(--bokgi-warning-ink);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
+    "Noto Sans KR", system-ui, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .tiptap-editor p {

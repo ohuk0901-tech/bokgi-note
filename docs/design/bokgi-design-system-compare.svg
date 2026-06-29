@@ -1,0 +1,233 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">복기노트 디자인 시스템 후보 비교</title>
+  <desc id="desc">Open Design Apple Notes형, shadcn neutral형, Notion workspace형 세 가지 모바일 대시보드 후보를 나란히 비교한 이미지</desc>
+  <style>
+    :root {
+      --page-bg: #f5f5f7;
+      --page-surface: #ffffff;
+      --page-fg: #1d1d1f;
+      --page-muted: #6e6e73;
+      --page-border: #d2d2d7;
+
+      --apple-bg: #ffffff;
+      --apple-surface: #f5f5f7;
+      --apple-card: #fbfbfd;
+      --apple-fg: #1d1d1f;
+      --apple-muted: #6e6e73;
+      --apple-border: #e8e8ed;
+      --apple-accent: #0071e3;
+      --apple-on: #ffffff;
+
+      --neutral-bg: #fafafa;
+      --neutral-surface: #ffffff;
+      --neutral-card: #ffffff;
+      --neutral-fg: #171717;
+      --neutral-muted: #737373;
+      --neutral-border: #e5e5e5;
+      --neutral-accent: #171717;
+      --neutral-on: #ffffff;
+
+      --notion-bg: #fbfbfa;
+      --notion-surface: #ffffff;
+      --notion-card: #f7f6f3;
+      --notion-fg: #2f3437;
+      --notion-muted: #787774;
+      --notion-border: #e9e5de;
+      --notion-accent: #0f766e;
+      --notion-on: #ffffff;
+    }
+
+    text {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .mono {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .page-bg { fill: var(--page-bg); }
+    .note { fill: var(--page-surface); stroke: var(--page-border); stroke-width: 1; }
+    .page-fg { fill: var(--page-fg); }
+    .page-muted { fill: var(--page-muted); }
+
+    .phone-shell { fill: var(--page-surface); stroke: var(--page-border); stroke-width: 1; }
+    .screen-apple { fill: var(--apple-bg); }
+    .screen-neutral { fill: var(--neutral-bg); }
+    .screen-notion { fill: var(--notion-bg); }
+
+    .apple-card { fill: var(--apple-card); stroke: var(--apple-border); stroke-width: 1; }
+    .apple-surface { fill: var(--apple-surface); stroke: var(--apple-border); stroke-width: 1; }
+    .apple-fg { fill: var(--apple-fg); }
+    .apple-muted { fill: var(--apple-muted); }
+    .apple-accent { fill: var(--apple-accent); }
+    .apple-on { fill: var(--apple-on); }
+    .apple-line { stroke: var(--apple-border); stroke-width: 1; }
+
+    .neutral-card { fill: var(--neutral-card); stroke: var(--neutral-border); stroke-width: 1; }
+    .neutral-surface { fill: var(--neutral-surface); stroke: var(--neutral-border); stroke-width: 1; }
+    .neutral-fg { fill: var(--neutral-fg); }
+    .neutral-muted { fill: var(--neutral-muted); }
+    .neutral-accent { fill: var(--neutral-accent); }
+    .neutral-on { fill: var(--neutral-on); }
+    .neutral-line { stroke: var(--neutral-border); stroke-width: 1; }
+
+    .notion-card { fill: var(--notion-card); stroke: var(--notion-border); stroke-width: 1; }
+    .notion-surface { fill: var(--notion-surface); stroke: var(--notion-border); stroke-width: 1; }
+    .notion-fg { fill: var(--notion-fg); }
+    .notion-muted { fill: var(--notion-muted); }
+    .notion-accent { fill: var(--notion-accent); }
+    .notion-on { fill: var(--notion-on); }
+    .notion-line { stroke: var(--notion-border); stroke-width: 1; }
+
+    .h1 { font-size: 32px; font-weight: 760; }
+    .card-title { font-size: 18px; font-weight: 760; }
+    .note-text { font-size: 13px; }
+    .brand { font-size: 24px; font-weight: 760; }
+    .section { font-size: 16px; font-weight: 760; }
+    .label { font-size: 12px; }
+    .date-big { font-size: 39px; font-weight: 520; }
+    .row-title { font-size: 14px; font-weight: 700; }
+    .button { font-size: 15px; font-weight: 760; }
+  </style>
+
+  <rect class="page-bg" width="1200" height="900"/>
+  <text x="40" y="56" class="page-fg h1">복기노트 디자인 시스템 후보</text>
+  <text x="40" y="84" class="page-muted note-text">같은 정보 구조에서 시각 시스템만 바꾼 비교입니다. 실제 앱 구현은 건드리지 않은 보기용 시안입니다.</text>
+
+  <g transform="translate(40 118)">
+    <rect class="note" width="340" height="86" rx="14"/>
+    <text x="16" y="30" class="page-fg card-title">A. Open Design Apple / Notes형</text>
+    <text x="16" y="55" class="page-muted note-text">가장 추천. iPhone PWA와 맞고,</text>
+    <text x="16" y="74" class="page-muted note-text">매일 쓰는 메모 앱처럼 조용합니다.</text>
+  </g>
+
+  <g transform="translate(430 118)">
+    <rect class="note" width="340" height="86" rx="14"/>
+    <text x="16" y="30" class="page-fg card-title">B. shadcn neutral형</text>
+    <text x="16" y="55" class="page-muted note-text">구현은 편하지만 홈까지 이 톤이면</text>
+    <text x="16" y="74" class="page-muted note-text">SaaS 관리 화면처럼 보일 수 있습니다.</text>
+  </g>
+
+  <g transform="translate(820 118)">
+    <rect class="note" width="340" height="86" rx="14"/>
+    <text x="16" y="30" class="page-fg card-title">C. Notion workspace형</text>
+    <text x="16" y="55" class="page-muted note-text">에디터에는 참고 가능하지만, 홈에서는</text>
+    <text x="16" y="74" class="page-muted note-text">문서 관리 느낌이 강해질 수 있습니다.</text>
+  </g>
+
+  <g transform="translate(40 230)">
+    <rect class="phone-shell" width="340" height="640" rx="32"/>
+    <rect class="screen-apple" x="10" y="10" width="320" height="620" rx="24"/>
+    <text x="28" y="40" class="apple-fg mono label">9:41</text>
+    <text x="28" y="88" class="apple-fg brand">복기노트</text>
+    <text x="28" y="109" class="apple-muted label">6.23 화</text>
+    <circle cx="296" cy="86" r="19" class="apple-surface"/>
+    <path d="M286 82h20M286 86h20M286 90h20" stroke="var(--apple-fg)" stroke-width="1.6" stroke-linecap="round"/>
+
+    <rect x="28" y="132" width="284" height="154" rx="18" class="apple-surface"/>
+    <text x="44" y="158" class="apple-muted label">오늘</text>
+    <text x="44" y="198" class="apple-fg" font-size="29" font-weight="760">투자 일기</text>
+    <text x="44" y="242" class="apple-fg mono date-big">06.23</text>
+    <rect x="44" y="254" width="252" height="42" rx="12" class="apple-fg"/>
+    <text x="170" y="281" text-anchor="middle" class="apple-on button">투자 일기 작성하기</text>
+
+    <rect x="28" y="302" width="284" height="70" rx="18" class="apple-card"/>
+    <text x="44" y="331" class="apple-fg section">이번 주 복기</text>
+    <text x="44" y="351" class="apple-muted label">기록 4개</text>
+    <rect x="244" y="316" width="52" height="40" rx="12" class="apple-accent"/>
+    <text x="270" y="342" text-anchor="middle" class="apple-on button">시작</text>
+
+    <rect x="28" y="386" width="284" height="108" rx="18" class="apple-card"/>
+    <text x="44" y="416" class="apple-fg section">복기 대기</text>
+    <line x1="44" y1="431" x2="296" y2="431" class="apple-line"/>
+    <text x="44" y="459" class="apple-muted mono label">6.19</text>
+    <text x="88" y="456" class="apple-fg row-title">하락장 메모</text>
+    <text x="282" y="459" class="apple-muted" font-size="18">›</text>
+    <line x1="44" y1="475" x2="296" y2="475" class="apple-line"/>
+    <text x="44" y="489" class="apple-muted mono label">6.17</text>
+    <text x="88" y="489" class="apple-fg row-title">매수 보류</text>
+
+    <rect x="28" y="508" width="284" height="82" rx="18" class="apple-card"/>
+    <text x="44" y="538" class="apple-fg section">대표 메모</text>
+    <text x="44" y="566" class="apple-fg row-title">급등장 매수 기준</text>
+    <text x="44" y="588" class="apple-fg row-title">손절 전 확인할 것</text>
+  </g>
+
+  <g transform="translate(430 230)">
+    <rect class="phone-shell" width="340" height="640" rx="32"/>
+    <rect class="screen-neutral" x="10" y="10" width="320" height="620" rx="24"/>
+    <text x="28" y="40" class="neutral-fg mono label">9:41</text>
+    <text x="28" y="88" class="neutral-fg brand">복기노트</text>
+    <text x="28" y="109" class="neutral-muted label">6.23 화</text>
+    <circle cx="296" cy="86" r="19" class="neutral-surface"/>
+    <path d="M286 82h20M286 86h20M286 90h20" stroke="var(--neutral-fg)" stroke-width="1.6" stroke-linecap="round"/>
+
+    <rect x="28" y="132" width="284" height="154" rx="12" class="neutral-surface"/>
+    <text x="44" y="158" class="neutral-muted label">오늘</text>
+    <text x="44" y="198" class="neutral-fg" font-size="29" font-weight="760">투자 일기</text>
+    <text x="44" y="242" class="neutral-fg mono date-big">06.23</text>
+    <rect x="44" y="254" width="252" height="42" rx="12" class="neutral-accent"/>
+    <text x="170" y="281" text-anchor="middle" class="neutral-on button">투자 일기 작성하기</text>
+
+    <rect x="28" y="302" width="284" height="70" rx="12" class="neutral-card"/>
+    <text x="44" y="331" class="neutral-fg section">이번 주 복기</text>
+    <text x="44" y="351" class="neutral-muted label">기록 4개</text>
+    <rect x="244" y="316" width="52" height="40" rx="12" class="neutral-surface"/>
+    <text x="270" y="342" text-anchor="middle" class="neutral-fg button">시작</text>
+
+    <rect x="28" y="386" width="284" height="108" rx="12" class="neutral-card"/>
+    <text x="44" y="416" class="neutral-fg section">복기 대기</text>
+    <line x1="44" y1="431" x2="296" y2="431" class="neutral-line"/>
+    <text x="44" y="459" class="neutral-muted mono label">6.19</text>
+    <text x="88" y="456" class="neutral-fg row-title">하락장 메모</text>
+    <text x="282" y="459" class="neutral-muted" font-size="18">›</text>
+    <line x1="44" y1="475" x2="296" y2="475" class="neutral-line"/>
+    <text x="44" y="489" class="neutral-muted mono label">6.17</text>
+    <text x="88" y="489" class="neutral-fg row-title">매수 보류</text>
+
+    <rect x="28" y="508" width="284" height="82" rx="12" class="neutral-card"/>
+    <text x="44" y="538" class="neutral-fg section">대표 메모</text>
+    <text x="44" y="566" class="neutral-fg row-title">급등장 매수 기준</text>
+    <text x="44" y="588" class="neutral-fg row-title">손절 전 확인할 것</text>
+  </g>
+
+  <g transform="translate(820 230)">
+    <rect class="phone-shell" width="340" height="640" rx="32"/>
+    <rect class="screen-notion" x="10" y="10" width="320" height="620" rx="24"/>
+    <text x="28" y="40" class="notion-fg mono label">9:41</text>
+    <text x="28" y="88" class="notion-fg brand">복기노트</text>
+    <text x="28" y="109" class="notion-muted label">6.23 화</text>
+    <circle cx="296" cy="86" r="19" class="notion-card"/>
+    <path d="M286 82h20M286 86h20M286 90h20" stroke="var(--notion-fg)" stroke-width="1.6" stroke-linecap="round"/>
+
+    <rect x="28" y="132" width="284" height="154" rx="10" class="notion-surface"/>
+    <text x="44" y="158" class="notion-muted label">오늘</text>
+    <text x="44" y="198" class="notion-fg" font-size="29" font-weight="760">투자 일기</text>
+    <text x="44" y="242" class="notion-fg mono date-big">06.23</text>
+    <rect x="44" y="254" width="252" height="42" rx="8" class="notion-accent"/>
+    <text x="170" y="281" text-anchor="middle" class="notion-on button">투자 일기 작성하기</text>
+
+    <rect x="28" y="302" width="284" height="70" rx="10" class="notion-card"/>
+    <text x="44" y="331" class="notion-fg section">이번 주 복기</text>
+    <text x="44" y="351" class="notion-muted label">기록 4개</text>
+    <rect x="244" y="316" width="52" height="40" rx="8" class="notion-accent"/>
+    <text x="270" y="342" text-anchor="middle" class="notion-on button">시작</text>
+
+    <rect x="28" y="386" width="284" height="108" rx="10" class="notion-card"/>
+    <text x="44" y="416" class="notion-fg section">복기 대기</text>
+    <line x1="44" y1="431" x2="296" y2="431" class="notion-line"/>
+    <text x="44" y="459" class="notion-muted mono label">6.19</text>
+    <text x="88" y="456" class="notion-fg row-title">하락장 메모</text>
+    <text x="282" y="459" class="notion-muted" font-size="18">›</text>
+    <line x1="44" y1="475" x2="296" y2="475" class="notion-line"/>
+    <text x="44" y="489" class="notion-muted mono label">6.17</text>
+    <text x="88" y="489" class="notion-fg row-title">매수 보류</text>
+
+    <rect x="28" y="508" width="284" height="82" rx="10" class="notion-card"/>
+    <text x="44" y="538" class="notion-fg section">대표 메모</text>
+    <text x="44" y="566" class="notion-fg row-title">급등장 매수 기준</text>
+    <text x="44" y="588" class="notion-fg row-title">손절 전 확인할 것</text>
+  </g>
+</svg>

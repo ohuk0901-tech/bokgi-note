@@ -1,0 +1,535 @@
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -1,21 +1,56 @@
+ @import "tailwindcss";
+ 
+ :root {
+-  --background: #f7f7f4;
++  --background: #fbfaf7;
+   --foreground: #1f1f1f;
++  --bokgi-bg: #fbfaf7;
++  --bokgi-surface: #ffffff;
++  --bokgi-surface-muted: #f7f7f4;
++  --bokgi-surface-hover: #f0f2ed;
++  --bokgi-ink: #1f1f1f;
++  --bokgi-ink-soft: #53584f;
++  --bokgi-muted: #72786f;
++  --bokgi-border: #d9dcd6;
++  --bokgi-border-soft: #e6e8e3;
++  --bokgi-primary: #1f1f1f;
++  --bokgi-primary-on: #ffffff;
++  --bokgi-accent: #2f6b4f;
++  --bokgi-accent-soft: #e8f0e9;
++  --bokgi-warning: #f5df92;
++  --bokgi-warning-ink: #69510f;
++  --radius-shell: 20px;
++  --radius-panel: 14px;
++  --radius-control: 12px;
++  --radius-pill: 999px;
+ }
+ 
+ @theme inline {
+   --color-background: var(--background);
+   --color-foreground: var(--foreground);
+-  --font-sans: Arial, Helvetica, sans-serif;
++  --color-bokgi-bg: var(--bokgi-bg);
++  --color-bokgi-surface: var(--bokgi-surface);
++  --color-bokgi-surface-muted: var(--bokgi-surface-muted);
++  --color-bokgi-surface-hover: var(--bokgi-surface-hover);
++  --color-bokgi-ink: var(--bokgi-ink);
++  --color-bokgi-ink-soft: var(--bokgi-ink-soft);
++  --color-bokgi-muted: var(--bokgi-muted);
++  --color-bokgi-border: var(--bokgi-border);
++  --color-bokgi-border-soft: var(--bokgi-border-soft);
++  --color-bokgi-primary: var(--bokgi-primary);
++  --color-bokgi-primary-on: var(--bokgi-primary-on);
++  --color-bokgi-accent: var(--bokgi-accent);
++  --color-bokgi-accent-soft: var(--bokgi-accent-soft);
++  --color-bokgi-warning: var(--bokgi-warning);
++  --color-bokgi-warning-ink: var(--bokgi-warning-ink);
++  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
++    "Noto Sans KR", system-ui, sans-serif;
+   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+ }
+ 
+ body {
+   background: var(--background);
+   color: var(--foreground);
+-  font-family: Arial, Helvetica, sans-serif;
++  font-family: var(--font-sans);
+ }
+ 
+ .tiptap-editor p {
+--- a/src/components/AppChrome.tsx
++++ b/src/components/AppChrome.tsx
+@@ -1,54 +1,67 @@
+ "use client";
+ 
+ import Link from "next/link";
+-import { Archive, Folder, LayoutDashboard, Settings } from "lucide-react";
++import { useState } from "react";
++import { Archive, Folder, MoreHorizontal, Settings } from "lucide-react";
+ 
+ export function AppChrome({ children }: { children: React.ReactNode }) {
++  const [menuOpen, setMenuOpen] = useState(false);
++
+   return (
+-    <div className="min-h-screen bg-[#f7f7f4] text-[#1f1f1f]">
+-      <header className="sticky top-0 z-20 border-b border-[#dddeda] bg-[#f7f7f4]/95 backdrop-blur">
+-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
++    <div className="min-h-screen bg-bokgi-bg text-bokgi-ink">
++      <header className="sticky top-0 z-20 border-b border-bokgi-border bg-bokgi-bg/95 backdrop-blur">
++        <div className="relative mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+           <Link href="/dashboard" className="text-lg font-semibold">
+             복기노트
+           </Link>
+-          <nav className="flex items-center gap-1">
+-            <IconLink href="/dashboard" label="대시보드">
+-              <LayoutDashboard size={19} />
+-            </IconLink>
+-            <IconLink href="/folders" label="폴더">
+-              <Folder size={19} />
+-            </IconLink>
+-            <IconLink href="/trash" label="휴지통">
+-              <Archive size={19} />
+-            </IconLink>
+-            <IconLink href="/settings" label="설정">
+-              <Settings size={19} />
+-            </IconLink>
+-          </nav>
++          <button
++            type="button"
++            onClick={() => setMenuOpen((value) => !value)}
++            className="flex h-10 w-10 items-center justify-center rounded-full text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
++            aria-label="메뉴"
++            aria-expanded={menuOpen}
++          >
++            <MoreHorizontal size={22} />
++          </button>
++          {menuOpen ? (
++            <nav className="absolute right-4 top-12 z-30 w-44 overflow-hidden rounded-[var(--radius-panel)] border border-bokgi-border bg-bokgi-surface py-1 text-sm shadow-lg">
++              <MenuLink href="/folders" label="폴더" onClick={() => setMenuOpen(false)}>
++                <Folder size={17} />
++              </MenuLink>
++              <MenuLink href="/trash" label="휴지통" onClick={() => setMenuOpen(false)}>
++                <Archive size={17} />
++              </MenuLink>
++              <MenuLink href="/settings" label="설정" onClick={() => setMenuOpen(false)}>
++                <Settings size={17} />
++              </MenuLink>
++            </nav>
++          ) : null}
+         </div>
+       </header>
+-      <div className="mx-auto max-w-5xl px-4 py-5">{children}</div>
++      <div className="mx-auto max-w-2xl px-4 py-5">{children}</div>
+     </div>
+   );
+ }
+ 
+-function IconLink({
++function MenuLink({
+   href,
+   label,
+   children,
++  onClick,
+ }: {
+   href: string;
+   label: string;
+   children: React.ReactNode;
++  onClick: () => void;
+ }) {
+   return (
+     <Link
+       href={href}
+-      aria-label={label}
+-      title={label}
+-      className="flex h-10 w-10 items-center justify-center rounded-full text-[#53584f] hover:bg-[#ebeee9] hover:text-[#1f1f1f]"
++      onClick={onClick}
++      className="flex items-center gap-2 px-3 py-2.5 text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+     >
+       {children}
++      <span>{label}</span>
+     </Link>
+   );
+ }
+--- a/src/lib/data/dashboard.ts
++++ b/src/lib/data/dashboard.ts
+@@ -46,10 +46,11 @@
+     }),
+   );
+ 
+-  const [dueReviews, pinnedNotes, recentItems] = await Promise.all([
++  const [dueReviews, pinnedNotes, recentItems, weeklyReviewNoteCount] = await Promise.all([
+     getDueReviews(supabase, userId),
+     getPinnedNotes(supabase, userId),
+     getRecentItems(supabase, userId),
++    getWeeklyReviewNoteCount(supabase, userId),
+   ]);
+ 
+   return {
+@@ -61,6 +62,7 @@
+     dueReviews,
+     pinnedNotes,
+     recentItems,
++    weeklyReviewNoteCount,
+     frequentTemplates: templates.slice(0, 4),
+   };
+ }
+@@ -177,6 +179,33 @@
+   );
+ }
+ 
++async function getWeeklyReviewNoteCount(supabase: Client, userId: string, date = todayISO()) {
++  const weekStart = weekStartISO(date);
++  const weekEnd = addDaysISO(weekStart, 6);
++  const { data: templates, error: templateError } = await supabase
++    .from("templates")
++    .select("id")
++    .eq("user_id", userId)
++    .eq("template_kind", "investment_journal")
++    .is("deleted_at", null);
++  if (templateError) throw templateError;
++
++  const templateIds = (templates ?? []).map((template) => template.id);
++  if (!templateIds.length) return 0;
++
++  const { count, error } = await supabase
++    .from("notes")
++    .select("id", { count: "exact", head: true })
++    .eq("user_id", userId)
++    .in("template_id", templateIds)
++    .gte("note_date", weekStart)
++    .lte("note_date", weekEnd)
++    .eq("is_draft", false)
++    .is("deleted_at", null);
++  if (error) throw error;
++  return count ?? 0;
++}
++
+ async function getDueReviews(supabase: Client, userId: string) {
+   const { data: schedules, error } = await supabase
+     .from("review_schedules")
+--- a/src/components/DashboardPage.tsx
++++ b/src/components/DashboardPage.tsx
+@@ -3,15 +3,7 @@
+ import Link from "next/link";
+ import { useRouter } from "next/navigation";
+ import { Children, useEffect, useState } from "react";
+-import {
+-  ArrowRight,
+-  BookOpenCheck,
+-  CalendarClock,
+-  ClipboardList,
+-  Pin,
+-  Plus,
+-  Star,
+-} from "lucide-react";
++import { ArrowRight, BookOpenCheck, CalendarClock, Pin } from "lucide-react";
+ import { AppChrome } from "@/components/AppChrome";
+ import { LoadingState } from "@/components/LoadingState";
+ import { SetupNotice } from "@/components/SetupNotice";
+@@ -20,17 +12,16 @@
+   createOrOpenTemplateNote,
+   getDashboardData,
+   startWeeklyReview,
+-  type DashboardRoutineItem,
+ } from "@/lib/data";
+-import { formatKoreanDate } from "@/lib/date";
++import { formatKoreanDate, todayISO } from "@/lib/date";
+ import type { DashboardReviewItem, Note, Template, UnifiedItem } from "@/lib/types";
+ 
+ type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+ 
+ const REVIEW_LABEL: Record<DashboardReviewItem["review_type"], string> = {
+-  "1w": "1주 복기",
+-  "3m": "3개월 복기",
+-  "1y": "1년 복기",
++  "1w": "1주",
++  "3m": "3개월",
++  "1y": "1년",
+ };
+ 
+ export function DashboardPage() {
+@@ -55,7 +46,7 @@
+   if (loadError) {
+     return (
+       <AppChrome>
+-        <p className="py-10 text-center text-sm text-[#63685f]">{loadError}</p>
++        <p className="py-10 text-center text-sm text-bokgi-muted">{loadError}</p>
+       </AppChrome>
+     );
+   }
+@@ -87,29 +78,26 @@
+   }
+ 
+   const primaryRoutine = data.primaryRoutine;
++  const todayLabel = formatKoreanDate(todayISO());
+ 
+   return (
+     <AppChrome>
+-      <div className="space-y-7">
+-        <section>
+-          <p className="text-sm font-medium text-[#2f6b4f]">오늘</p>
+-          <h1 className="mt-1 text-2xl font-semibold">오늘 기록</h1>
+-          <p className="mt-1 text-sm leading-6 text-[#63685f]">
+-            오늘의 시장과 내 판단을 짧게 남깁니다.
+-          </p>
++      <div className="space-y-5">
++        <section className="space-y-3">
++          <p className="text-sm text-bokgi-muted">{todayLabel}</p>
+           {primaryRoutine ? (
+             <button
+               onClick={() => openTemplate(primaryRoutine.template)}
+               disabled={busyTemplateId === primaryRoutine.template.id}
+-              className="mt-4 flex h-13 w-full items-center justify-between rounded bg-[#1f1f1f] px-4 text-left font-medium text-white disabled:opacity-50"
++              className="flex min-h-20 w-full items-center justify-between rounded-[var(--radius-panel)] bg-bokgi-primary px-4 text-left text-bokgi-primary-on disabled:opacity-50"
+             >
+-              <span>{primaryRoutine.actionLabel}</span>
++              <span className="text-lg font-semibold">{primaryRoutine.actionLabel}</span>
+               <ArrowRight size={19} />
+             </button>
+           ) : (
+             <Link
+               href="/settings"
+-              className="mt-4 flex h-12 items-center justify-center rounded border border-[#d4d8d1] bg-white text-sm font-medium"
++              className="flex h-12 items-center justify-center rounded-[var(--radius-control)] border border-bokgi-border bg-bokgi-surface text-sm font-medium"
+             >
+               대표 템플릿 설정하기
+             </Link>
+@@ -119,70 +107,42 @@
+         <DashboardSection
+           icon={<BookOpenCheck size={18} />}
+           title="이번 주 복기"
+-          description="이번 주 투자 일기를 모아 읽고 생각을 정리합니다."
+-          empty=""
++          aside={`기록 ${data.weeklyReviewNoteCount}개`}
++          empty="이번 주 기록이 없습니다."
+         >
+           <button
+             onClick={openWeeklyReview}
+-            disabled={busyWeeklyReview}
+-            className="flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-50"
++            disabled={busyWeeklyReview || data.weeklyReviewNoteCount === 0}
++            className="flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-40"
+           >
+-            <div>
+-              <p className="font-medium">이번 주 복기 시작</p>
+-              <p className="mt-1 text-sm leading-6 text-[#63685f]">
+-                이번 주 투자 일기를 자동으로 불러와 복기 세션을 만듭니다.
+-              </p>
+-            </div>
+-            <ArrowRight className="shrink-0 text-[#72786f]" size={17} />
++            <span className="font-medium">시작</span>
++            <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
+           </button>
+         </DashboardSection>
+ 
+         <DashboardSection
+           icon={<CalendarClock size={18} />}
+-          title="다시 볼 기록"
+-          description="1주, 3개월, 1년 뒤 다시 보기로 한 기록입니다."
+-          empty="다시 볼 기록이 없습니다."
++          title="복기 대기"
++          aside={data.dueReviews.length > 3 ? `외 ${data.dueReviews.length - 3}개` : undefined}
++          empty="대기 중인 기록이 없습니다."
+         >
+-          {data.dueReviews.map((item) => (
++          {data.dueReviews.slice(0, 3).map((item) => (
+             <Link
+               key={item.id}
+               href={`/notes/${item.note_id}?reviewScheduleId=${item.id}&from=dashboard`}
+-              className="flex items-start justify-between gap-3 border-t border-[#e3e5e0] py-3 first:border-t-0"
++              className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
+             >
+-              <div className="min-w-0">
+-                <p className="truncate font-medium">{item.note.title}</p>
+-                <p className="mt-1 text-sm text-[#63685f]">
+-                  {REVIEW_LABEL[item.review_type]} · {formatKoreanDate(item.due_date)}
+-                </p>
+-              </div>
+-              <ArrowRight className="mt-1 shrink-0 text-[#72786f]" size={17} />
++              <span className="shrink-0 rounded-full bg-bokgi-surface-muted px-2 py-1 text-xs font-semibold text-bokgi-muted">
++                {REVIEW_LABEL[item.review_type]}
++              </span>
++              <p className="min-w-0 flex-1 truncate font-medium">{item.note.title}</p>
++              <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
+             </Link>
+           ))}
+         </DashboardSection>
+ 
+-        <DashboardSection
+-          icon={<ClipboardList size={18} />}
+-          title="주간 기록"
+-          description="금요일부터 월요일까지 한 주 마무리와 다음 주 계획을 작성합니다."
+-          empty="금요일부터 월요일까지 표시됩니다."
+-        >
+-          {data.weeklyRoutines.map((item) => (
+-            <RoutineButton
+-              key={item.template.id}
+-              item={item}
+-              busy={busyTemplateId === item.template.id}
+-              onClick={() => openTemplate(item.template)}
+-            />
+-          ))}
+-        </DashboardSection>
+-
+-        <DashboardSection
+-          icon={<Pin size={18} />}
+-          title="대표 메모"
+-          description="자주 확인할 투자 원칙과 행동 기준을 고정해둡니다."
+-          empty="메모 화면에서 핀 버튼을 눌러 고정할 수 있습니다."
+-        >
+-          {data.pinnedNotes.map((note) => (
++        <DashboardSection icon={<Pin size={18} />} title="대표 메모" empty="고정한 메모가 없습니다.">
++          {data.pinnedNotes.slice(0, 3).map((note) => (
+             <NoteLink key={note.id} note={note} />
+           ))}
+         </DashboardSection>
+@@ -190,36 +150,12 @@
+         <DashboardSection
+           icon={<BookOpenCheck size={18} />}
+           title="최근 기록"
+-          description="최근 작성하거나 수정한 메모와 복기입니다."
+           empty="아직 기록이 없습니다."
+         >
+-          {data.recentItems.map((item) => (
++          {data.recentItems.slice(0, 4).map((item) => (
+             <UnifiedLink key={`${item.item_type}:${item.id}`} item={item} />
+           ))}
+         </DashboardSection>
+-
+-        <DashboardSection
+-          icon={<Star size={18} />}
+-          title="자주 쓰는 템플릿"
+-          description="반복해서 쓰는 기록 양식을 바로 시작합니다."
+-          empty="템플릿이 없습니다."
+-        >
+-          {data.frequentTemplates.length ? (
+-            <div className="grid gap-2 sm:grid-cols-2">
+-              {data.frequentTemplates.map((template) => (
+-                <button
+-                  key={template.id}
+-                  onClick={() => openTemplate(template)}
+-                  disabled={busyTemplateId === template.id}
+-                  className="flex h-11 items-center justify-between rounded border border-[#d7dbd3] px-3 text-left text-sm font-medium disabled:opacity-50"
+-                >
+-                  <span>{template.name}</span>
+-                  <Plus size={16} />
+-                </button>
+-              ))}
+-            </div>
+-          ) : null}
+-        </DashboardSection>
+       </div>
+     </AppChrome>
+   );
+@@ -228,73 +164,45 @@
+ function DashboardSection({
+   icon,
+   title,
+-  description,
++  aside,
+   empty,
+   children,
+ }: {
+   icon: React.ReactNode;
+   title: string;
+-  description?: string;
++  aside?: string;
+   empty: string;
+   children: React.ReactNode;
+ }) {
+   const childList = Children.toArray(children).filter(Boolean);
+   return (
+     <section>
+-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#2f6b4f]">
+-        {icon}
+-        {title}
++      <div className="mb-2 flex items-center justify-between gap-3">
++        <div className="flex items-center gap-2 text-sm font-semibold text-bokgi-accent">
++          {icon}
++          {title}
++        </div>
++        {aside ? <span className="text-xs font-medium text-bokgi-muted">{aside}</span> : null}
+       </div>
+-      {description ? (
+-        <p className="mb-2 text-sm leading-6 text-[#63685f]">{description}</p>
+-      ) : null}
+-      <div className="rounded border border-[#d9dcd6] bg-white px-4 py-2">
++      <div className="rounded-[var(--radius-panel)] border border-bokgi-border bg-bokgi-surface px-4 py-2">
+         {childList.length ? (
+           childList
+         ) : (
+-          <p className="py-5 text-center text-sm text-[#72786f]">{empty}</p>
++          <p className="py-5 text-center text-sm text-bokgi-muted">{empty}</p>
+         )}
+       </div>
+     </section>
+   );
+ }
+ 
+-function RoutineButton({
+-  item,
+-  busy,
+-  onClick,
+-}: {
+-  item: DashboardRoutineItem;
+-  busy: boolean;
+-  onClick: () => void;
+-}) {
+-  return (
+-    <button
+-      onClick={onClick}
+-      disabled={busy}
+-      className="flex w-full items-center justify-between gap-3 border-t border-[#e3e5e0] py-3 text-left first:border-t-0 disabled:opacity-50"
+-    >
+-      <div>
+-        <p className="font-medium">{item.actionLabel}</p>
+-        <p className="mt-1 text-sm text-[#63685f]">
+-          {item.existingNote ? "이미 만든 루틴을 이어 씁니다." : "전용 폴더에 새 기록을 만듭니다."}
+-        </p>
+-      </div>
+-      <ArrowRight className="shrink-0 text-[#72786f]" size={17} />
+-    </button>
+-  );
+-}
+-
+ function NoteLink({ note }: { note: Note }) {
+   return (
+     <Link
+       href={`/notes/${note.id}?from=dashboard`}
+-      className="block border-t border-[#e3e5e0] py-3 first:border-t-0"
++      className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
+     >
+       <p className="truncate font-medium">{note.title}</p>
+-      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#63685f]">
+-        {note.content_text || note.content || "내용 없음"}
+-      </p>
++      <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
+     </Link>
+   );
+ }
+@@ -307,19 +215,10 @@
+           ? `/notes/${item.id}?from=dashboard`
+           : `/reviews/${item.id}?from=dashboard`
+       }
+-      className="block border-t border-[#e3e5e0] py-3 first:border-t-0"
++      className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
+     >
+-      <div className="flex items-center gap-2">
+-        <p className="truncate font-medium">{item.title}</p>
+-        {item.item_type === "review_session" ? (
+-          <span className="rounded bg-[#f5df92] px-2 py-0.5 text-xs text-[#69510f]">
+-            복기
+-          </span>
+-        ) : null}
+-      </div>
+-      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#63685f]">
+-        {item.preview}
+-      </p>
++      <p className="truncate font-medium">{item.title}</p>
++      <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
+     </Link>
+   );
+ }

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "bokgi-design-system-compare.html",
+  "entry": "bokgi-design-system-compare.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-06-23T13:11:39.008Z",
+  "updatedAt": "2026-06-23T13:11:39.008Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

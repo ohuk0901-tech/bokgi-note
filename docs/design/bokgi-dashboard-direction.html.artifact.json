@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "bokgi-dashboard-direction.html",
+  "entry": "bokgi-dashboard-direction.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-06-23T12:33:54.149Z",
+  "updatedAt": "2026-06-23T12:33:54.149Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

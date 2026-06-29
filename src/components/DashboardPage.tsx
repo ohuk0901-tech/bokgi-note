@@ -3,15 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Children, useEffect, useState } from "react";
-import {
-  ArrowRight,
-  BookOpenCheck,
-  CalendarClock,
-  ClipboardList,
-  Pin,
-  Plus,
-  Star,
-} from "lucide-react";
+import { ArrowRight, BookOpenCheck, CalendarClock, Pin } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -20,17 +12,16 @@ import {
   createOrOpenTemplateNote,
   getDashboardData,
   startWeeklyReview,
-  type DashboardRoutineItem,
 } from "@/lib/data";
-import { formatKoreanDate } from "@/lib/date";
+import { formatKoreanDate, todayISO } from "@/lib/date";
 import type { DashboardReviewItem, Note, Template, UnifiedItem } from "@/lib/types";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
 const REVIEW_LABEL: Record<DashboardReviewItem["review_type"], string> = {
-  "1w": "1주 복기",
-  "3m": "3개월 복기",
-  "1y": "1년 복기",
+  "1w": "1주",
+  "3m": "3개월",
+  "1y": "1년",
 };
 
 export function DashboardPage() {
@@ -55,7 +46,7 @@ export function DashboardPage() {
   if (loadError) {
     return (
       <AppChrome>
-        <p className="py-10 text-center text-sm text-[#63685f]">{loadError}</p>
+        <p className="py-10 text-center text-sm text-bokgi-muted">{loadError}</p>
       </AppChrome>
     );
   }
@@ -87,29 +78,26 @@ export function DashboardPage() {
   }
 
   const primaryRoutine = data.primaryRoutine;
+  const todayLabel = formatKoreanDate(todayISO());
 
   return (
     <AppChrome>
-      <div className="space-y-7">
-        <section>
-          <p className="text-sm font-medium text-[#2f6b4f]">오늘</p>
-          <h1 className="mt-1 text-2xl font-semibold">오늘 기록</h1>
-          <p className="mt-1 text-sm leading-6 text-[#63685f]">
-            오늘의 시장과 내 판단을 짧게 남깁니다.
-          </p>
+      <div className="space-y-5">
+        <section className="space-y-3">
+          <p className="text-sm text-bokgi-muted">{todayLabel}</p>
           {primaryRoutine ? (
             <button
               onClick={() => openTemplate(primaryRoutine.template)}
               disabled={busyTemplateId === primaryRoutine.template.id}
-              className="mt-4 flex h-13 w-full items-center justify-between rounded bg-[#1f1f1f] px-4 text-left font-medium text-white disabled:opacity-50"
+              className="flex min-h-20 w-full items-center justify-between rounded-[var(--radius-panel)] bg-bokgi-primary px-4 text-left text-bokgi-primary-on disabled:opacity-50"
             >
-              <span>{primaryRoutine.actionLabel}</span>
+              <span className="text-lg font-semibold">{primaryRoutine.actionLabel}</span>
               <ArrowRight size={19} />
             </button>
           ) : (
             <Link
               href="/settings"
-              className="mt-4 flex h-12 items-center justify-center rounded border border-[#d4d8d1] bg-white text-sm font-medium"
+              className="flex h-12 items-center justify-center rounded-[var(--radius-control)] border border-bokgi-border bg-bokgi-surface text-sm font-medium"
             >
               대표 템플릿 설정하기
             </Link>
@@ -119,70 +107,42 @@ export function DashboardPage() {
         <DashboardSection
           icon={<BookOpenCheck size={18} />}
           title="이번 주 복기"
-          description="이번 주 투자 일기를 모아 읽고 생각을 정리합니다."
-          empty=""
+          aside={`기록 ${data.weeklyReviewNoteCount}개`}
+          empty="이번 주 기록이 없습니다."
         >
           <button
             onClick={openWeeklyReview}
-            disabled={busyWeeklyReview}
-            className="flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-50"
+            disabled={busyWeeklyReview || data.weeklyReviewNoteCount === 0}
+            className="flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-40"
           >
-            <div>
-              <p className="font-medium">이번 주 복기 시작</p>
-              <p className="mt-1 text-sm leading-6 text-[#63685f]">
-                이번 주 투자 일기를 자동으로 불러와 복기 세션을 만듭니다.
-              </p>
-            </div>
-            <ArrowRight className="shrink-0 text-[#72786f]" size={17} />
+            <span className="font-medium">시작</span>
+            <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
           </button>
         </DashboardSection>
 
         <DashboardSection
           icon={<CalendarClock size={18} />}
-          title="다시 볼 기록"
-          description="1주, 3개월, 1년 뒤 다시 보기로 한 기록입니다."
-          empty="다시 볼 기록이 없습니다."
+          title="복기 대기"
+          aside={data.dueReviews.length > 3 ? `외 ${data.dueReviews.length - 3}개` : undefined}
+          empty="대기 중인 기록이 없습니다."
         >
-          {data.dueReviews.map((item) => (
+          {data.dueReviews.slice(0, 3).map((item) => (
             <Link
               key={item.id}
               href={`/notes/${item.note_id}?reviewScheduleId=${item.id}&from=dashboard`}
-              className="flex items-start justify-between gap-3 border-t border-[#e3e5e0] py-3 first:border-t-0"
+              className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{item.note.title}</p>
-                <p className="mt-1 text-sm text-[#63685f]">
-                  {REVIEW_LABEL[item.review_type]} · {formatKoreanDate(item.due_date)}
-                </p>
-              </div>
-              <ArrowRight className="mt-1 shrink-0 text-[#72786f]" size={17} />
+              <span className="shrink-0 rounded-full bg-bokgi-surface-muted px-2 py-1 text-xs font-semibold text-bokgi-muted">
+                {REVIEW_LABEL[item.review_type]}
+              </span>
+              <p className="min-w-0 flex-1 truncate font-medium">{item.note.title}</p>
+              <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
             </Link>
           ))}
         </DashboardSection>
 
-        <DashboardSection
-          icon={<ClipboardList size={18} />}
-          title="주간 기록"
-          description="금요일부터 월요일까지 한 주 마무리와 다음 주 계획을 작성합니다."
-          empty="금요일부터 월요일까지 표시됩니다."
-        >
-          {data.weeklyRoutines.map((item) => (
-            <RoutineButton
-              key={item.template.id}
-              item={item}
-              busy={busyTemplateId === item.template.id}
-              onClick={() => openTemplate(item.template)}
-            />
-          ))}
-        </DashboardSection>
-
-        <DashboardSection
-          icon={<Pin size={18} />}
-          title="대표 메모"
-          description="자주 확인할 투자 원칙과 행동 기준을 고정해둡니다."
-          empty="메모 화면에서 핀 버튼을 눌러 고정할 수 있습니다."
-        >
-          {data.pinnedNotes.map((note) => (
+        <DashboardSection icon={<Pin size={18} />} title="대표 메모" empty="고정한 메모가 없습니다.">
+          {data.pinnedNotes.slice(0, 3).map((note) => (
             <NoteLink key={note.id} note={note} />
           ))}
         </DashboardSection>
@@ -190,35 +150,11 @@ export function DashboardPage() {
         <DashboardSection
           icon={<BookOpenCheck size={18} />}
           title="최근 기록"
-          description="최근 작성하거나 수정한 메모와 복기입니다."
           empty="아직 기록이 없습니다."
         >
-          {data.recentItems.map((item) => (
+          {data.recentItems.slice(0, 4).map((item) => (
             <UnifiedLink key={`${item.item_type}:${item.id}`} item={item} />
           ))}
-        </DashboardSection>
-
-        <DashboardSection
-          icon={<Star size={18} />}
-          title="자주 쓰는 템플릿"
-          description="반복해서 쓰는 기록 양식을 바로 시작합니다."
-          empty="템플릿이 없습니다."
-        >
-          {data.frequentTemplates.length ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {data.frequentTemplates.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => openTemplate(template)}
-                  disabled={busyTemplateId === template.id}
-                  className="flex h-11 items-center justify-between rounded border border-[#d7dbd3] px-3 text-left text-sm font-medium disabled:opacity-50"
-                >
-                  <span>{template.name}</span>
-                  <Plus size={16} />
-                </button>
-              ))}
-            </div>
-          ) : null}
         </DashboardSection>
       </div>
     </AppChrome>
@@ -228,60 +164,34 @@ export function DashboardPage() {
 function DashboardSection({
   icon,
   title,
-  description,
+  aside,
   empty,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
-  description?: string;
+  aside?: string;
   empty: string;
   children: React.ReactNode;
 }) {
   const childList = Children.toArray(children).filter(Boolean);
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#2f6b4f]">
-        {icon}
-        {title}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-bokgi-accent">
+          {icon}
+          {title}
+        </div>
+        {aside ? <span className="text-xs font-medium text-bokgi-muted">{aside}</span> : null}
       </div>
-      {description ? (
-        <p className="mb-2 text-sm leading-6 text-[#63685f]">{description}</p>
-      ) : null}
-      <div className="rounded border border-[#d9dcd6] bg-white px-4 py-2">
+      <div className="rounded-[var(--radius-panel)] border border-bokgi-border bg-bokgi-surface px-4 py-2">
         {childList.length ? (
           childList
         ) : (
-          <p className="py-5 text-center text-sm text-[#72786f]">{empty}</p>
+          <p className="py-5 text-center text-sm text-bokgi-muted">{empty}</p>
         )}
       </div>
     </section>
-  );
-}
-
-function RoutineButton({
-  item,
-  busy,
-  onClick,
-}: {
-  item: DashboardRoutineItem;
-  busy: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={busy}
-      className="flex w-full items-center justify-between gap-3 border-t border-[#e3e5e0] py-3 text-left first:border-t-0 disabled:opacity-50"
-    >
-      <div>
-        <p className="font-medium">{item.actionLabel}</p>
-        <p className="mt-1 text-sm text-[#63685f]">
-          {item.existingNote ? "이미 만든 루틴을 이어 씁니다." : "전용 폴더에 새 기록을 만듭니다."}
-        </p>
-      </div>
-      <ArrowRight className="shrink-0 text-[#72786f]" size={17} />
-    </button>
   );
 }
 
@@ -289,12 +199,10 @@ function NoteLink({ note }: { note: Note }) {
   return (
     <Link
       href={`/notes/${note.id}?from=dashboard`}
-      className="block border-t border-[#e3e5e0] py-3 first:border-t-0"
+      className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
     >
       <p className="truncate font-medium">{note.title}</p>
-      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#63685f]">
-        {note.content_text || note.content || "내용 없음"}
-      </p>
+      <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
     </Link>
   );
 }
@@ -307,19 +215,10 @@ function UnifiedLink({ item }: { item: UnifiedItem }) {
           ? `/notes/${item.id}?from=dashboard`
           : `/reviews/${item.id}?from=dashboard`
       }
-      className="block border-t border-[#e3e5e0] py-3 first:border-t-0"
+      className="flex items-center justify-between gap-3 border-t border-bokgi-border-soft py-3 first:border-t-0"
     >
-      <div className="flex items-center gap-2">
-        <p className="truncate font-medium">{item.title}</p>
-        {item.item_type === "review_session" ? (
-          <span className="rounded bg-[#f5df92] px-2 py-0.5 text-xs text-[#69510f]">
-            복기
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-1 line-clamp-2 text-sm leading-6 text-[#63685f]">
-        {item.preview}
-      </p>
+      <p className="truncate font-medium">{item.title}</p>
+      <ArrowRight className="shrink-0 text-bokgi-muted" size={17} />
     </Link>
   );
 }

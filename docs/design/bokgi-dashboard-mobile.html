@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>복기노트 모바일 대시보드</title>
+  <style>
+    :root {
+      --bg: oklch(98% 0.004 240);
+      --surface: oklch(100% 0 0);
+      --fg: oklch(20% 0.01 245);
+      --muted: oklch(52% 0.014 245);
+      --border: oklch(90% 0.008 245);
+      --accent: oklch(45% 0.07 165);
+      --accent-soft: color-mix(in oklch, var(--accent) 9%, var(--surface));
+      --surface-soft: oklch(96.5% 0.004 245);
+      --font-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+      --radius: 14px;
+      --gutter: 18px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      background: var(--bg);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.45;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button {
+      border: 0;
+      padding: 0;
+      font: inherit;
+      letter-spacing: 0;
+      color: inherit;
+      cursor: pointer;
+      background: none;
+    }
+
+    h1, h2, h3, p, blockquote { margin: 0; }
+    h1, h2, h3 { font-weight: 700; letter-spacing: 0; }
+    svg { display: block; }
+
+    .page {
+      width: 100%;
+      min-height: 100dvh;
+      display: grid;
+      place-items: start center;
+    }
+
+    .app-shell {
+      width: min(100%, 430px);
+      min-height: 100dvh;
+      padding: 16px var(--gutter) 32px;
+      background: var(--bg);
+    }
+
+    @media (min-width: 760px) {
+      .page { padding: 28px 0; }
+      .app-shell {
+        min-height: 844px;
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        box-shadow: 0 24px 70px color-mix(in oklch, var(--fg) 10%, transparent);
+      }
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 2px 0 18px;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      line-height: 1.12;
+    }
+
+    .brand p {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .menu-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      display: grid;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+    }
+
+    .primary-card {
+      min-height: 168px;
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+      background: var(--surface);
+    }
+
+    .card-head,
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-head h2 {
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .state {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .today-main {
+      display: grid;
+      gap: 10px;
+    }
+
+    .today-date {
+      font-family: var(--font-mono);
+      font-size: 34px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .today-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .btn {
+      min-height: 44px;
+      border-radius: 12px;
+      padding: 0 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      transition: transform 130ms ease, background 150ms ease, color 150ms ease;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--fg);
+      color: var(--surface);
+    }
+
+    .btn-secondary {
+      background: var(--accent);
+      color: var(--surface);
+    }
+
+    .btn-plain {
+      color: var(--muted);
+      padding-inline: 0;
+      min-height: 36px;
+      font-weight: 650;
+    }
+
+    .review-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-title {
+      display: grid;
+      gap: 4px;
+    }
+
+    .review-title h2 {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .review-title p,
+    .list-meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pending-card,
+    .principle-card,
+    .recent-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .section-title h2 {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .pending-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .pending-title,
+    .record-title {
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .small-link {
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: var(--surface-soft);
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .principle {
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .record-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .record {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .record:first-child { padding-top: 0; border-top: 0; }
+
+    .record-date {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      padding-top: 2px;
+    }
+
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: color-mix(in oklch, var(--fg) 18%, transparent);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .sheet {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      z-index: 21;
+      width: min(100%, 430px);
+      transform: translate(-50%, 105%);
+      transition: transform 220ms ease;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 10px 18px 20px;
+      box-shadow: 0 -18px 50px color-mix(in oklch, var(--fg) 14%, transparent);
+    }
+
+    .sheet.open { transform: translate(-50%, 0); }
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--border);
+      margin: 0 auto 16px;
+    }
+
+    .sheet h2 {
+      font-size: 19px;
+      margin-bottom: 12px;
+    }
+
+    .sheet-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .sheet-action {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-weight: 650;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 30;
+      width: min(calc(100% - 32px), 380px);
+      transform: translate(-50%, 14px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+      background: var(--fg);
+      color: var(--surface);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 370px) {
+      :root { --gutter: 14px; }
+      .today-date { font-size: 30px; }
+      .review-card { grid-template-columns: 1fr; }
+      .btn-secondary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="app-shell">
+      <header class="topbar" data-od-id="topbar">
+        <div class="brand">
+          <h1>복기노트</h1>
+          <p>6월 22일 월요일</p>
+        </div>
+        <button class="menu-button" type="button" data-open-sheet="menu" aria-label="관리 메뉴">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M5 12h14M5 6h14M5 18h14" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </header>
+
+      <main>
+        <section class="card primary-card" data-od-id="today-entry">
+          <div class="card-head">
+            <h2>오늘 기록</h2>
+            <span class="state">아직 안 씀</span>
+          </div>
+          <div class="today-main">
+            <div class="today-date">06.22</div>
+            <p class="today-note">짧게 남기기</p>
+          </div>
+          <button class="btn btn-primary" type="button" data-open-sheet="today">쓰기</button>
+        </section>
+
+        <section class="card review-card" data-od-id="weekly-review">
+          <div class="review-title">
+            <h2>이번 주 복기</h2>
+            <p>기록 4개</p>
+          </div>
+          <button class="btn btn-secondary" type="button" data-open-sheet="week">시작</button>
+        </section>
+
+        <section class="card pending-card" data-od-id="pending-review">
+          <div class="row section-title">
+            <h2>복기 대기</h2>
+            <span class="list-meta" id="pendingCount">2개</span>
+          </div>
+          <article class="pending-row" id="pendingItem">
+            <div>
+              <p class="pending-title">지난주 하락장 메모</p>
+              <p class="list-meta">6.19 · 기록만 함</p>
+            </div>
+            <button class="small-link" type="button" data-open-sheet="pending">복기</button>
+          </article>
+        </section>
+
+        <section class="card principle-card" data-od-id="principle-memo">
+          <div class="row section-title">
+            <h2>대표 메모</h2>
+            <button class="btn-plain" type="button" data-toast="대표 메모를 열었어요.">전체</button>
+          </div>
+          <blockquote class="principle">급하게 오른 종목은 다음 날 다시 읽고 결정한다.</blockquote>
+        </section>
+
+        <section class="card recent-card" data-od-id="recent-records">
+          <div class="row section-title">
+            <h2>최근 기록</h2>
+            <button class="btn-plain" type="button" data-toast="전체 기록을 열었어요.">전체</button>
+          </div>
+          <div class="record-list">
+            <article class="record">
+              <span class="record-date">6.21</span>
+              <div>
+                <p class="record-title">환율 뉴스에 흔들렸던 판단</p>
+                <p class="list-meta">기록만 함</p>
+              </div>
+            </article>
+            <article class="record">
+              <span class="record-date">6.19</span>
+              <div>
+                <p class="record-title">관망하기로 한 이유</p>
+                <p class="list-meta">복기 완료</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+  <aside class="sheet" id="sheet" aria-live="polite" aria-label="빠른 작업">
+    <div class="sheet-handle"></div>
+    <h2 id="sheetTitle">빠른 작업</h2>
+    <div class="sheet-actions" id="sheetActions"></div>
+  </aside>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const sheet = document.getElementById("sheet");
+    const sheetBackdrop = document.getElementById("sheetBackdrop");
+    const sheetTitle = document.getElementById("sheetTitle");
+    const sheetActions = document.getElementById("sheetActions");
+    const toast = document.getElementById("toast");
+    const pendingItem = document.getElementById("pendingItem");
+    const pendingCount = document.getElementById("pendingCount");
+
+    const sheetContent = {
+      today: {
+        title: "오늘 기록",
+        actions: ["새로 쓰기", "이어쓰기"]
+      },
+      week: {
+        title: "이번 주 복기",
+        actions: ["바로 시작", "기록 고르기"]
+      },
+      pending: {
+        title: "복기 대기",
+        actions: ["복기하기", "내일 보기"]
+      },
+      menu: {
+        title: "관리",
+        actions: ["폴더", "템플릿", "휴지통", "설정"]
+      }
+    };
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1500);
+    }
+
+    function openSheet(kind) {
+      const content = sheetContent[kind] || sheetContent.menu;
+      sheetTitle.textContent = content.title;
+      sheetActions.innerHTML = "";
+      content.actions.forEach((label) => {
+        const button = document.createElement("button");
+        button.className = "sheet-action";
+        button.type = "button";
+        button.innerHTML = `<span>${label}</span><span aria-hidden="true">›</span>`;
+        button.addEventListener("click", () => {
+          closeSheet();
+          if (kind === "pending" && label === "내일 보기") {
+            pendingItem.classList.add("hidden");
+            pendingCount.textContent = "1개";
+            window.localStorage.setItem("bokgi-dashboard-pending-snoozed", "true");
+            showToast("내일 다시 표시합니다.");
+            return;
+          }
+          showToast(`${label}을 열었어요.`);
+        });
+        sheetActions.appendChild(button);
+      });
+      sheet.classList.add("open");
+      sheetBackdrop.classList.add("open");
+    }
+
+    function closeSheet() {
+      sheet.classList.remove("open");
+      sheetBackdrop.classList.remove("open");
+    }
+
+    document.querySelectorAll("[data-open-sheet]").forEach((button) => {
+      button.addEventListener("click", () => openSheet(button.dataset.openSheet));
+    });
+
+    document.querySelectorAll("[data-toast]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.toast));
+    });
+
+    sheetBackdrop.addEventListener("click", closeSheet);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeSheet();
+    });
+
+    if (window.localStorage.getItem("bokgi-dashboard-pending-snoozed") === "true") {
+      pendingItem.classList.add("hidden");
+      pendingCount.textContent = "1개";
+    }
+  </script>
+</body>
+</html>
