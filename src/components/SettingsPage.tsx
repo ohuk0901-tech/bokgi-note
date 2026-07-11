@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Pencil, Plus, Smartphone, Star, Trash2, UserX } from "lucide-react";
+import Link from "next/link";
+import {
+  FileText,
+  LogOut,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Smartphone,
+  Star,
+  Trash2,
+  UserX,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
@@ -103,6 +114,25 @@ export function SettingsPage() {
                 Android는 Chrome 메뉴에서 추가하세요.
               </p>
             </div>
+          </div>
+        </section>
+        <section className="px-4 py-4">
+          <p className="mb-3 font-medium">베타 안내</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              href="/terms"
+              className="flex items-center gap-2 rounded border border-bokgi-border bg-bokgi-surface-muted px-3 py-3 text-sm hover:bg-bokgi-surface-hover"
+            >
+              <FileText size={17} />
+              이용 안내
+            </Link>
+            <Link
+              href="/privacy"
+              className="flex items-center gap-2 rounded border border-bokgi-border bg-bokgi-surface-muted px-3 py-3 text-sm hover:bg-bokgi-surface-hover"
+            >
+              <ShieldCheck size={17} />
+              개인정보 안내
+            </Link>
           </div>
         </section>
         <section className="px-4 py-4">
