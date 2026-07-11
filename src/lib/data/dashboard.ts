@@ -1,7 +1,11 @@
 import { addDaysISO, formatKoreanDate, todayISO, weekStartISO } from "@/lib/date";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
 import { createReviewDraft } from "@/lib/data/reviews";
-import { findRoutineNote, getTemplates } from "@/lib/data/templates";
+import {
+  ensureFolderByName,
+  findRoutineNote,
+  getTemplates,
+} from "@/lib/data/templates";
 import type { Client } from "@/lib/data/shared";
 import type {
   DashboardReviewItem,
@@ -27,6 +31,7 @@ export async function getDashboardData(supabase: Client, userId: string) {
     getRecentItems(supabase, userId),
     getWeeklyReviewNoteCount(supabase, userId),
   ]);
+  const weeklyReview = await getExistingWeeklyReview(supabase, userId);
 
   return {
     primaryRoutine: primaryTemplate ? toRoutineItem(primaryTemplate, primaryNote) : null,
@@ -34,10 +39,11 @@ export async function getDashboardData(supabase: Client, userId: string) {
     pinnedNotes,
     recentItems,
     weeklyReviewNoteCount,
+    weeklyReview,
   };
 }
 
-export async function getPinnedNotes(supabase: Client, userId: string) {
+export async function getPinnedNotes(supabase: Client, userId: string, limit = 5) {
   const { data, error } = await supabase
     .from("notes")
     .select("*")
@@ -45,7 +51,7 @@ export async function getPinnedNotes(supabase: Client, userId: string) {
     .eq("is_pinned", true)
     .is("deleted_at", null)
     .order("pinned_at", { ascending: false })
-    .limit(5);
+    .limit(limit);
 
   if (error) throw error;
   return data ?? [];
@@ -126,6 +132,28 @@ export async function startWeeklyReview(
     throw new Error("이번 주에 작성한 투자 일기가 없습니다.");
   }
 
+  const { data: weeklyTemplate, error: weeklyTemplateError } = await supabase
+    .from("templates")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("template_kind", "weekly_review")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (weeklyTemplateError) throw weeklyTemplateError;
+
+  const weeklyReviewFolderId = weeklyTemplate
+    ? (await ensureFolderByName(supabase, userId, weeklyTemplate.name)).id
+    : notes[0].folder_id;
+
+  if (weeklyTemplate && weeklyTemplate.default_folder_id !== weeklyReviewFolderId) {
+    const { error: templateFolderError } = await supabase
+      .from("templates")
+      .update({ default_folder_id: weeklyReviewFolderId })
+      .eq("id", weeklyTemplate.id)
+      .eq("user_id", userId);
+    if (templateFolderError) throw templateFolderError;
+  }
+
   const title = `${formatKoreanDate(weekStart)}-${formatKoreanDate(weekEnd)} 주간 복기`;
   const { data: existingReview, error: existingError } = await supabase
     .from("review_sessions")
@@ -135,18 +163,95 @@ export async function startWeeklyReview(
     .is("deleted_at", null)
     .maybeSingle();
   if (existingError) throw existingError;
-  if (existingReview) return existingReview;
+  if (existingReview) {
+    let review = existingReview;
+
+    if (existingReview.folder_id !== weeklyReviewFolderId) {
+      const { data: movedReview, error: moveError } = await supabase
+        .from("review_sessions")
+        .update({ folder_id: weeklyReviewFolderId })
+        .eq("id", existingReview.id)
+        .eq("user_id", userId)
+        .select("*")
+        .single();
+
+      if (moveError) throw moveError;
+      review = movedReview;
+    }
+
+    await syncWeeklyReviewSources(supabase, review.id, notes);
+    return review;
+  }
 
   return createReviewDraft(
     supabase,
     userId,
-    notes[0].folder_id,
+    weeklyReviewFolderId,
     notes.map((note) => ({ type: "note" as const, id: note.id })),
     {
       title,
       reviewDate: date,
+      content: weeklyTemplate?.content ?? "",
+      contentJson: weeklyTemplate?.content_json,
+      contentText: weeklyTemplate?.content_text ?? "",
+      editorPosition: 1,
     },
   );
+}
+
+async function getExistingWeeklyReview(supabase: Client, userId: string, date = todayISO()) {
+  const weekStart = weekStartISO(date);
+  const weekEnd = addDaysISO(weekStart, 6);
+  const title = `${formatKoreanDate(weekStart)}-${formatKoreanDate(weekEnd)} 주간 복기`;
+  const { data, error } = await supabase
+    .from("review_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("title", title)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+async function syncWeeklyReviewSources(
+  supabase: Client,
+  reviewId: string,
+  notes: Note[],
+) {
+  const { data: sources, error } = await supabase
+    .from("review_sources")
+    .select("source_note_id, sort_order")
+    .eq("review_session_id", reviewId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+
+  const existingNoteIds = new Set(
+    (sources ?? [])
+      .map((source) => source.source_note_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const missingNotes = notes.filter((note) => !existingNoteIds.has(note.id));
+  if (!missingNotes.length) return;
+
+  const nextSortOrder =
+    (sources ?? []).reduce(
+      (max, source) => Math.max(max, source.sort_order ?? 0),
+      -1,
+    ) + 1;
+
+  const { error: insertError } = await supabase.from("review_sources").insert(
+    missingNotes.map((note, index) => ({
+      review_session_id: reviewId,
+      source_note_id: note.id,
+      source_review_session_id: null,
+      sort_order: nextSortOrder + index,
+    })),
+  );
+
+  if (insertError) throw insertError;
 }
 
 async function getWeeklyReviewNoteCount(supabase: Client, userId: string, date = todayISO()) {
@@ -176,7 +281,7 @@ async function getWeeklyReviewNoteCount(supabase: Client, userId: string, date =
   return count ?? 0;
 }
 
-async function getDueReviews(supabase: Client, userId: string) {
+export async function getDueReviews(supabase: Client, userId: string, limit = 20) {
   const { data: schedules, error } = await supabase
     .from("review_schedules")
     .select("*")
@@ -184,7 +289,7 @@ async function getDueReviews(supabase: Client, userId: string) {
     .eq("status", "pending")
     .lte("due_date", todayISO())
     .order("due_date", { ascending: true })
-    .limit(20);
+    .limit(limit);
 
   if (error) throw error;
   if (!schedules?.length) return [];
@@ -207,7 +312,7 @@ async function getDueReviews(supabase: Client, userId: string) {
     .filter((item): item is DashboardReviewItem => Boolean(item));
 }
 
-async function getRecentItems(supabase: Client, userId: string) {
+export async function getRecentItems(supabase: Client, userId: string, limit = 8) {
   const [notesResult, reviewsResult] = await Promise.all([
     supabase
       .from("notes")
@@ -216,7 +321,7 @@ async function getRecentItems(supabase: Client, userId: string) {
       .is("deleted_at", null)
       .eq("is_draft", false)
       .order("updated_at", { ascending: false })
-      .limit(6),
+      .limit(limit),
     supabase
       .from("review_sessions")
       .select("*")
@@ -224,7 +329,7 @@ async function getRecentItems(supabase: Client, userId: string) {
       .is("deleted_at", null)
       .eq("is_draft", false)
       .order("updated_at", { ascending: false })
-      .limit(6),
+      .limit(limit),
   ]);
 
   if (notesResult.error) throw notesResult.error;
@@ -235,7 +340,7 @@ async function getRecentItems(supabase: Client, userId: string) {
     ...((reviewsResult.data ?? []) as ReviewSession[]).map(reviewToUnified),
   ]
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 8);
+    .slice(0, limit);
 }
 
 function toRoutineItem(template: Template, existingNote: Note | null) {

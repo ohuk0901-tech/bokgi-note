@@ -51,7 +51,7 @@ export function EditableReviewNoteCard({
   });
 
   return (
-    <div className="rounded border border-[#d9dcd6] bg-white p-4">
+    <div className="rounded border border-bokgi-border bg-bokgi-surface p-4">
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -61,7 +61,7 @@ export function EditableReviewNoteCard({
         type="date"
         value={noteDate}
         onChange={(event) => setNoteDate(event.target.value)}
-        className="mt-3 rounded border border-[#d4d8d1] px-3 py-2 text-sm"
+        className="mt-3 rounded border border-bokgi-border px-3 py-2 text-sm"
       />
       {saveStatus === "error" ? (
         <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

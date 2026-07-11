@@ -170,6 +170,10 @@ function mergeListNodes(target: Json, source: Json) {
 
 export const DEFAULT_TEMPLATE_NAMES = {
   investment: "투자 일기",
+  weeklyReview: "주간 복기",
+} as const;
+
+export const LEGACY_DEFAULT_TEMPLATE_NAMES = {
   weeklyReview: "한 주 마무리",
   nextWeekPlan: "다음 주 계획",
   freeMemo: "자유 메모",
@@ -252,15 +256,8 @@ export const DEFAULT_TEMPLATE_SPECS = [
       orderedList(),
       paragraph("다음 주 교훈"),
       bulletList(),
-    ]),
-  },
-  {
-    name: DEFAULT_TEMPLATE_NAMES.nextWeekPlan,
-    kind: "next_week_plan" as TemplateKind,
-    isPrimary: false,
-    allowMultiplePerDay: false,
-    reviewSchedulePreset: "none" as const,
-    contentJson: doc([
+      paragraph(),
+      paragraph(),
       paragraph("다음 주 한줄 목표"),
       bulletList(),
       paragraph("확인할 것"),
@@ -270,13 +267,5 @@ export const DEFAULT_TEMPLATE_SPECS = [
       paragraph("할 것"),
       bulletList(),
     ]),
-  },
-  {
-    name: DEFAULT_TEMPLATE_NAMES.freeMemo,
-    kind: "free_note" as TemplateKind,
-    isPrimary: false,
-    allowMultiplePerDay: true,
-    reviewSchedulePreset: "none" as const,
-    contentJson: EMPTY_EDITOR_DOC,
   },
 ];

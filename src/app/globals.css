@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbfaf7;
-  --foreground: #1f1f1f;
-  --bokgi-bg: #fbfaf7;
-  --bokgi-surface: #ffffff;
-  --bokgi-surface-muted: #f7f7f4;
-  --bokgi-surface-hover: #f0f2ed;
-  --bokgi-ink: #1f1f1f;
-  --bokgi-ink-soft: #53584f;
-  --bokgi-muted: #72786f;
-  --bokgi-border: #d9dcd6;
-  --bokgi-border-soft: #e6e8e3;
-  --bokgi-primary: #1f1f1f;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --bokgi-bg: #f5f5f7;
+  --bokgi-surface: #fffefa;
+  --bokgi-surface-muted: rgba(60, 60, 67, 0.07);
+  --bokgi-surface-hover: rgba(60, 60, 67, 0.12);
+  --bokgi-ink: #1d1d1f;
+  --bokgi-ink-soft: rgba(29, 29, 31, 0.76);
+  --bokgi-muted: rgba(60, 60, 67, 0.58);
+  --bokgi-border: rgba(60, 60, 67, 0.14);
+  --bokgi-border-soft: rgba(60, 60, 67, 0.09);
+  --bokgi-primary: #1d1d1f;
   --bokgi-primary-on: #ffffff;
-  --bokgi-accent: #2f6b4f;
-  --bokgi-accent-soft: #e8f0e9;
+  --bokgi-accent: #007aff;
+  --bokgi-accent-soft: rgba(0, 122, 255, 0.1);
   --bokgi-warning: #f5df92;
   --bokgi-warning-ink: #69510f;
   --radius-shell: 20px;

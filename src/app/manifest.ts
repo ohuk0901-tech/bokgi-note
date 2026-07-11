@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "메모를 모아 읽고 다시 복기하는 기록 앱",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#f7f7f4",
-    theme_color: "#f7f7f4",
+    background_color: "#f5f5f7",
+    theme_color: "#f5f5f7",
     icons: [
       {
         src: "/icon-192.png",

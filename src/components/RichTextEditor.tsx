@@ -119,7 +119,7 @@ export function RichTextEditor({
 
   return (
     <div className="rich-text-editor">
-      <div className="mb-3 flex flex-wrap gap-1 rounded border border-[#d7dbd3] bg-white p-1">
+      <div className="mb-3 flex flex-wrap gap-1 rounded border border-bokgi-border bg-bokgi-surface p-1">
         <ToolbarButton
           label="불릿 목록"
           active={Boolean(editor?.isActive("bulletList"))}
@@ -194,8 +194,8 @@ function ToolbarButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-9 w-9 items-center justify-center rounded text-[#53584f] hover:bg-[#eef1ec] ${
-        active ? "bg-[#1f1f1f] text-white hover:bg-[#1f1f1f]" : ""
+      className={`flex h-9 w-9 items-center justify-center rounded text-bokgi-ink-soft hover:bg-bokgi-surface-hover ${
+        active ? "bg-bokgi-primary text-bokgi-primary-on hover:bg-bokgi-primary" : ""
       }`}
       aria-label={label}
       title={label}

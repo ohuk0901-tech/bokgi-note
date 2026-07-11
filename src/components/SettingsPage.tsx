@@ -88,17 +88,17 @@ export function SettingsPage() {
   return (
     <AppChrome>
       <h1 className="text-2xl font-semibold">설정</h1>
-      <div className="mt-5 divide-y divide-[#e1e3de] overflow-hidden rounded border border-[#d9dcd6] bg-white">
+      <div className="mt-5 divide-y divide-bokgi-border-soft overflow-hidden rounded border border-bokgi-border bg-bokgi-surface">
         <section className="px-4 py-4">
-          <p className="text-sm text-[#72786f]">로그인 계정</p>
+          <p className="text-sm text-bokgi-muted">로그인 계정</p>
           <p className="mt-1 font-medium">{user.email}</p>
         </section>
         <section className="px-4 py-4">
           <div className="flex items-start gap-3">
-            <Smartphone className="mt-1 text-[#2f6b4f]" size={20} />
+            <Smartphone className="mt-1 text-bokgi-accent" size={20} />
             <div>
               <p className="font-medium">홈 화면에 추가</p>
-              <p className="mt-1 text-sm leading-6 text-[#63685f]">
+              <p className="mt-1 text-sm leading-6 text-bokgi-ink-soft">
                 앱처럼 빠르게 열 수 있습니다. iPhone은 Safari 공유 버튼,
                 Android는 Chrome 메뉴에서 추가하세요.
               </p>
@@ -107,19 +107,19 @@ export function SettingsPage() {
         </section>
         <section className="px-4 py-4">
           <div className="mb-3 flex items-center gap-2">
-            <Star className="text-[#2f6b4f]" size={19} />
+            <Star className="text-bokgi-accent" size={19} />
             <h2 className="font-semibold">템플릿</h2>
           </div>
           <form onSubmit={addTemplate} className="mb-4 flex gap-2">
             <input
               value={newTemplateName}
               onChange={(event) => setNewTemplateName(event.target.value)}
-              className="min-w-0 flex-1 rounded border border-[#d4d8d1] bg-white px-3 text-sm outline-none"
+              className="min-w-0 flex-1 rounded border border-bokgi-border bg-bokgi-surface px-3 text-sm outline-none"
               placeholder="새 템플릿 이름"
             />
             <button
               disabled={creatingTemplate || !newTemplateName.trim()}
-              className="flex h-10 items-center gap-2 rounded bg-[#1f1f1f] px-3 text-sm font-medium text-white disabled:opacity-50"
+              className="flex h-10 items-center gap-2 rounded bg-bokgi-primary px-3 text-sm font-medium text-bokgi-primary-on disabled:opacity-50"
             >
               <Plus size={16} />
               추가
@@ -129,17 +129,13 @@ export function SettingsPage() {
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="rounded border border-[#d9dcd6] bg-[#fbfcfa] p-3"
+                className="rounded border border-bokgi-border bg-bokgi-surface-muted p-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{template.name}</p>
-                    <p className="mt-1 text-xs text-[#72786f]">
-                      {template.template_kind === "investment_journal"
-                        ? "대표 템플릿"
-                        : template.template_kind === "custom"
-                          ? "사용자 템플릿"
-                          : "기본 템플릿"}
+                    <p className="mt-1 text-xs text-bokgi-muted">
+                      {templateLabel(template)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -149,7 +145,7 @@ export function SettingsPage() {
                           current === template.id ? null : template.id,
                         )
                       }
-                      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec]"
+                      className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
                       title="템플릿 수정"
                       aria-label="템플릿 수정"
                     >
@@ -158,7 +154,7 @@ export function SettingsPage() {
                     {template.template_kind === "custom" ? (
                       <button
                         onClick={() => deleteTemplate(template)}
-                        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec]"
+                        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
                         title="템플릿 삭제"
                         aria-label="템플릿 삭제"
                       >
@@ -186,12 +182,12 @@ export function SettingsPage() {
             ))}
           </div>
           {templateMessage ? (
-            <p className="mt-3 text-sm text-[#2f6b4f]">{templateMessage}</p>
+            <p className="mt-3 text-sm text-bokgi-accent">{templateMessage}</p>
           ) : null}
         </section>
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-[#f2f5f1]"
+          className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-bokgi-surface-hover"
         >
           <LogOut size={19} />
           로그아웃
@@ -206,6 +202,13 @@ export function SettingsPage() {
       </div>
     </AppChrome>
   );
+}
+
+function templateLabel(template: Template) {
+  if (template.template_kind === "investment_journal") return "오늘 기록";
+  if (template.template_kind === "weekly_review") return "이번 주 복기";
+  if (template.template_kind === "custom") return "사용자 템플릿";
+  return "기본 템플릿";
 }
 
 function TemplateEditor({
@@ -251,7 +254,7 @@ function TemplateEditor({
       <input
         value={name}
         onChange={(event) => setName(event.target.value)}
-        className="mb-3 h-10 w-full rounded border border-[#d4d8d1] bg-white px-3 text-sm font-medium outline-none"
+        className="mb-3 h-10 w-full rounded border border-bokgi-border bg-bokgi-surface px-3 text-sm font-medium outline-none"
         placeholder="템플릿 이름"
       />
       <RichTextEditor
@@ -266,7 +269,7 @@ function TemplateEditor({
       <button
         onClick={saveTemplate}
         disabled={saving || !name.trim()}
-        className="mt-3 h-10 rounded bg-[#1f1f1f] px-4 text-sm font-medium text-white disabled:opacity-50"
+        className="mt-3 h-10 rounded bg-bokgi-primary px-4 text-sm font-medium text-bokgi-primary-on disabled:opacity-50"
       >
         저장
       </button>

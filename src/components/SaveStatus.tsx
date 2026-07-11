@@ -21,7 +21,7 @@ export function SaveStatus({ state }: { state: SaveState }) {
   }[state];
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-[#72786f]">
+    <span className="inline-flex items-center gap-1.5 text-xs text-bokgi-muted">
       {content.icon}
       {content.label}
     </span>

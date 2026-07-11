@@ -152,10 +152,10 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     return (
       <AppChrome>
         <div className="mx-auto max-w-3xl py-12 text-center">
-          <p className="text-sm text-[#63685f]">{loadError}</p>
+          <p className="text-sm text-bokgi-ink-soft">{loadError}</p>
           <Link
             href="/folders"
-            className="mt-5 inline-flex h-10 items-center rounded bg-[#1f1f1f] px-4 text-sm font-medium text-white"
+            className="mt-5 inline-flex h-10 items-center rounded bg-bokgi-primary px-4 text-sm font-medium text-bokgi-primary-on"
           >
             폴더로 돌아가기
           </Link>
@@ -216,7 +216,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
       <div className="mb-4 flex items-center justify-between">
         <Link
           href={backHref ?? `/folders/${note.folder_id}`}
-          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
+          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
           aria-label="뒤로"
           title="뒤로"
         >
@@ -227,7 +227,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
             <button
               onClick={handleCompleteReview}
               disabled={completeBusy}
-              className="flex h-10 items-center gap-2 rounded-full bg-[#2f6b4f] px-3 text-xs font-medium text-white disabled:opacity-50"
+              className="flex h-10 items-center gap-2 rounded-full bg-bokgi-accent px-3 text-xs font-medium text-bokgi-primary-on disabled:opacity-50"
             >
               <CheckCircle2 size={16} />
               복기 완료
@@ -235,7 +235,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           ) : null}
           <button
             onClick={handlePin}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
             title={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
             aria-label={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
           >
@@ -243,7 +243,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           </button>
           <button
             onClick={handleTrash}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
             title="휴지통"
             aria-label="휴지통"
           >
@@ -263,7 +263,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           type="date"
           value={noteDate}
           onChange={(event) => setNoteDate(event.target.value)}
-          className="mt-3 rounded border border-[#d4d8d1] bg-white px-3 py-2 text-sm text-[#53584f] outline-none"
+          className="mt-3 rounded border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
         />
         {saveStatus === "error" ? (
           <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

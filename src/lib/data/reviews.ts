@@ -2,7 +2,7 @@ import { defaultReviewTitle, deleteAfter30Days, todayISO } from "@/lib/date";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
 import type { Client } from "@/lib/data/shared";
 import { EMPTY_EDITOR_DOC } from "@/lib/editor";
-import type { Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
+import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
 export type ReviewSaveValues = Pick<
   ReviewSession,
@@ -15,21 +15,30 @@ export async function createReviewDraft(
   userId: string,
   folderId: string,
   sources: { type: "note" | "review_session"; id: string }[],
-  options: { title?: string; reviewDate?: string } = {},
+  options: {
+    title?: string;
+    reviewDate?: string;
+    content?: string;
+    contentJson?: Json;
+    contentText?: string;
+    editorPosition?: number;
+  } = {},
 ) {
   const reviewDate = options.reviewDate ?? todayISO();
+  const content = options.content ?? "";
+  const contentText = options.contentText ?? content;
   const { data: review, error } = await supabase
     .from("review_sessions")
     .insert({
       user_id: userId,
       folder_id: folderId,
       title: options.title ?? defaultReviewTitle(reviewDate),
-      content: "",
-      content_json: EMPTY_EDITOR_DOC,
-      content_text: "",
+      content,
+      content_json: options.contentJson ?? EMPTY_EDITOR_DOC,
+      content_text: contentText,
       review_date: reviewDate,
-      editor_position: 0,
-      is_draft: true,
+      editor_position: options.editorPosition ?? 0,
+      is_draft: !contentText.trim(),
     })
     .select()
     .single();

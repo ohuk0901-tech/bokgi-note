@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
+import { ExistingNotePickerSheet } from "@/components/review/ExistingNotePickerSheet";
 import { ReviewDraftBox } from "@/components/review/ReviewDraftBox";
 import { ReviewSourceCard } from "@/components/review/ReviewSourceCard";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -38,6 +39,12 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [contentText, setContentText] = useState("");
   const [reviewDate, setReviewDate] = useState("");
   const [editorPosition, setEditorPosition] = useState(0);
+  const [noteSheetOpen, setNoteSheetOpen] = useState(false);
+  const [noteSearch, setNoteSearch] = useState("");
+  const [noteCandidates, setNoteCandidates] = useState<Note[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [noteSheetError, setNoteSheetError] = useState("");
+  const [completing, setCompleting] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
@@ -64,7 +71,12 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
         setContentJson(editorJsonOrText(data.review.content_json, data.review.content));
         setContentText(data.review.content_text || data.review.content);
         setReviewDate(data.review.review_date);
-        setEditorPosition(data.review.editor_position);
+        setEditorPosition(
+          Math.min(
+            Math.max(data.review.editor_position || 1, 1),
+            Math.max(data.sources.length, 1),
+          ),
+        );
         setIsLoaded(true);
       })
       .catch((error) => {
@@ -131,6 +143,28 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   }, [content, contentJson, contentText, editorPosition, review, reviewDate, title]);
 
   useEffect(() => {
+    if (!noteSheetOpen || !supabase) return;
+    let ignore = false;
+
+    getActiveNotes(supabase, noteSearch)
+      .then((notes) => {
+        if (ignore) return;
+        setNoteCandidates(notes);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (!ignore) setNoteSheetError("기존 메모를 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (!ignore) setNotesLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [noteSearch, noteSheetOpen, supabase]);
+
+  useEffect(() => {
     return () => {
       const snapshot = latest.current;
       if (supabase && snapshot.review) {
@@ -170,10 +204,10 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     return (
       <AppChrome>
         <div className="mx-auto max-w-3xl py-12 text-center">
-          <p className="text-sm text-[#63685f]">{loadError}</p>
+          <p className="text-sm text-bokgi-ink-soft">{loadError}</p>
           <Link
             href="/folders"
-            className="mt-5 inline-flex h-10 items-center rounded bg-[#1f1f1f] px-4 text-sm font-medium text-white"
+            className="mt-5 inline-flex h-10 items-center rounded bg-bokgi-primary px-4 text-sm font-medium text-bokgi-primary-on"
           >
             폴더로 돌아가기
           </Link>
@@ -186,24 +220,42 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const client = supabase;
   const currentReview = review;
 
-  async function addEditableNote() {
-    const keyword = window.prompt("불러올 메모 검색어를 입력하세요", "");
-    if (keyword === null) return;
-    const candidates = await getActiveNotes(client, keyword);
-    const filtered = candidates.filter(
-      (note) => !editableNotes.some((item) => item.id === note.id),
-    );
-    const chosen = filtered[0];
-    if (!chosen) {
-      alert("불러올 메모를 찾지 못했습니다.");
+  function handleEditorChange(value: { contentJson: Json; contentText: string }) {
+    const payload = toEditorPayload(value.contentJson, value.contentText);
+    setContent(payload.content);
+    setContentJson(payload.content_json);
+    setContentText(payload.content_text);
+  }
+
+  function openExistingNotes() {
+    setNoteSheetError("");
+    setNoteCandidates([]);
+    setNotesLoading(true);
+    setNoteSheetOpen(true);
+  }
+
+  function handleNoteSearchChange(value: string) {
+    setNoteSearch(value);
+    setNoteSheetError("");
+    setNotesLoading(true);
+  }
+
+  async function selectEditableNote(note: Note) {
+    if (editableNotes.some((item) => item.id === note.id)) {
+      setNoteSheetOpen(false);
       return;
     }
     if (editableNotes.length >= 3) {
       alert("기존 메모는 최대 3개까지 불러올 수 있습니다.");
       return;
     }
-    await attachEditableNote(client, currentReview.id, chosen.id, editableNotes.length);
-    setEditableNotes((current) => [...current, chosen]);
+    try {
+      await attachEditableNote(client, currentReview.id, note.id, editableNotes.length);
+      setEditableNotes((current) => [...current, note]);
+      setNoteSheetOpen(false);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "기존 메모를 불러오지 못했습니다.");
+    }
   }
 
   async function handleEditableChange(
@@ -222,11 +274,24 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     router.push(backHref ?? `/folders/${currentReview.folder_id}`);
   }
 
-  function handleEditorChange(value: { contentJson: Json; contentText: string }) {
-    const payload = toEditorPayload(value.contentJson, value.contentText);
-    setContent(payload.content);
-    setContentJson(payload.content_json);
-    setContentText(payload.content_text);
+  async function completeReview() {
+    setCompleting(true);
+    try {
+      const snapshot = latest.current;
+      const savedDate = snapshot.reviewDate || currentReview.review_date;
+      await saveCurrentReview({
+        title: snapshot.title || defaultReviewTitle(savedDate),
+        content: snapshot.content,
+        contentJson: snapshot.contentJson,
+        contentText: snapshot.contentText,
+        editorPosition: snapshot.editorPosition,
+        reviewDate: savedDate,
+      });
+      router.push(backHref ?? `/folders/${currentReview.folder_id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "복기를 저장하지 못했습니다.");
+      setCompleting(false);
+    }
   }
 
   const editor = (
@@ -236,73 +301,106 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
       onChange={handleEditorChange}
     />
   );
+  const editableNoteIds = new Set(editableNotes.map((note) => note.id));
 
   return (
     <AppChrome>
-      <div className="mb-4 flex items-center justify-between">
-        <Link
-          href={backHref ?? `/folders/${review.folder_id}`}
-          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
-          aria-label="뒤로"
-          title="뒤로"
-        >
-          <ArrowLeft size={19} />
-        </Link>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleTrash}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#ebeee9]"
-            title="휴지통"
-            aria-label="휴지통"
+      <div className="mx-auto max-w-3xl pb-8">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <Link
+            href={backHref ?? `/folders/${review.folder_id}`}
+            className="flex items-center gap-1 text-sm font-medium text-bokgi-accent"
           >
-            <Trash2 size={18} />
-          </button>
+            <ArrowLeft size={17} />
+            기록
+          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleTrash}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-bokgi-muted hover:bg-bokgi-surface-hover"
+              aria-label="휴지통"
+              title="휴지통"
+            >
+              <Trash2 size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={completeReview}
+              disabled={completing}
+              className="text-sm font-semibold text-bokgi-accent disabled:opacity-40"
+            >
+              {completing ? "저장 중" : "완료"}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-3xl">
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className="w-full bg-transparent text-3xl font-semibold outline-none"
-        />
-        <input
-          type="date"
-          value={reviewDate}
-          onChange={(event) => setReviewDate(event.target.value)}
-          className="mt-3 rounded border border-[#d4d8d1] bg-white px-3 py-2 text-sm text-[#53584f] outline-none"
-        />
         {saveStatus === "error" ? (
-          <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mb-4 rounded-[14px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             저장하지 못했습니다. 인터넷 연결을 확인해주세요.
           </p>
         ) : null}
 
-        <div className="mt-6">
-          {sources.map((source, index) => (
-            <div key={`${source.item_type}:${source.id}`}>
-              {editorPosition === index ? editor : null}
-              <ReviewSourceCard
-                source={source}
-                onMoveInput={() => setEditorPosition(index + 1)}
-              />
-            </div>
-          ))}
-          {editorPosition >= sources.length ? editor : null}
-        </div>
+        <section className="mb-6 space-y-3 px-1">
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="w-full bg-transparent text-[30px] font-semibold leading-tight tracking-[-0.03em] outline-none"
+            placeholder="복기 제목"
+          />
+          <input
+            type="date"
+            value={reviewDate}
+            onChange={(event) => setReviewDate(event.target.value)}
+            className="rounded-[12px] border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
+          />
+        </section>
 
-        <section className="mt-8 border-t border-[#d4d8d1] pt-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">불러온 기존 메모</h2>
+        <section className="space-y-3">
+          <div className="px-1">
+            <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.03em]">
+              이번 주 기록
+            </h2>
+            <p className="mt-1 text-sm text-bokgi-muted">
+              {sources.length ? `${sources.length}개 메모` : "복기할 메모가 없습니다."}
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-[22px] border border-bokgi-border bg-bokgi-surface px-4 py-1">
+            {sources.map((source, index) => (
+              <div key={`${source.item_type}:${source.id}`}>
+                <ReviewSourceCard
+                  source={source}
+                  onMoveInput={() => setEditorPosition(index + 1)}
+                />
+                {editorPosition === index + 1 ? editor : null}
+              </div>
+            ))}
+            {!sources.length ? (
+              <div className="py-4">
+                {editor}
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="mt-6 space-y-3">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
+              <h2 className="text-[17px] font-semibold">수정할 기존 메모</h2>
+              <p className="mt-1 text-xs text-bokgi-muted">
+                복기 중 발견한 원칙을 원본 메모에 바로 반영합니다.
+              </p>
+            </div>
             <button
-              onClick={addEditableNote}
-              className="flex h-9 items-center gap-2 rounded-full bg-[#1f1f1f] px-3 text-xs font-medium text-white"
+              type="button"
+              onClick={openExistingNotes}
+              className="h-8 shrink-0 rounded-full bg-bokgi-surface-muted px-3 text-xs font-semibold text-bokgi-accent"
             >
-              <Plus size={15} />
               불러오기
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {editableNotes.map((note) => (
               <EditableReviewNoteCard
                 key={note.id}
@@ -311,13 +409,26 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
               />
             ))}
             {!editableNotes.length ? (
-              <p className="text-sm text-[#72786f]">
-                복기하면서 고칠 원칙 메모를 최대 3개까지 불러올 수 있습니다.
+              <p className="rounded-[18px] border border-bokgi-border bg-bokgi-surface px-4 py-5 text-sm leading-6 text-bokgi-muted">
+                투자 원칙이나 행동 기준 메모를 불러오면, 복기 화면에서 바로 수정할 수 있습니다.
               </p>
             ) : null}
           </div>
         </section>
       </div>
+
+      {noteSheetOpen ? (
+        <ExistingNotePickerSheet
+          error={noteSheetError}
+          loading={notesLoading}
+          notes={noteCandidates}
+          onClose={() => setNoteSheetOpen(false)}
+          onSearchChange={handleNoteSearchChange}
+          onSelect={selectEditableNote}
+          search={noteSearch}
+          selectedNoteIds={editableNoteIds}
+        />
+      ) : null}
     </AppChrome>
   );
 }

@@ -19,6 +19,11 @@ const WEEKLY_ROUTINE_KINDS = new Set<TemplateKind>([
   "next_week_plan",
 ]);
 
+const OBSOLETE_DEFAULT_TEMPLATE_KINDS: TemplateKind[] = [
+  "next_week_plan",
+  "free_note",
+];
+
 export async function ensureFolderByName(
   supabase: Client,
   userId: string,
@@ -55,6 +60,8 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
     .is("deleted_at", null)
     .maybeSingle();
 
+  await deleteObsoleteDefaultTemplates(supabase, userId);
+
   for (const [index, spec] of DEFAULT_TEMPLATE_SPECS.entries()) {
     const folder = await ensureFolderByName(supabase, userId, spec.name, index + 1);
     const { data: existingByKind, error: kindReadError } = await supabase
@@ -80,8 +87,25 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
     const payload = toEditorPayload(spec.contentJson);
     if (existing) {
       const updates: Partial<Template> = {};
-      if (!existing.default_folder_id) updates.default_folder_id = folder.id;
+      if (!existing.default_folder_id || existing.default_folder_id !== folder.id) {
+        updates.default_folder_id = folder.id;
+      }
       if (existing.template_kind !== spec.kind) updates.template_kind = spec.kind;
+      if (existing.name !== spec.name) {
+        const canUseName = await canUseTemplateName(
+          supabase,
+          userId,
+          spec.name,
+          existing.id,
+        );
+        if (canUseName) updates.name = spec.name;
+      }
+      if (existing.allow_multiple_per_day !== spec.allowMultiplePerDay) {
+        updates.allow_multiple_per_day = spec.allowMultiplePerDay;
+      }
+      if (existing.review_schedule_preset !== spec.reviewSchedulePreset) {
+        updates.review_schedule_preset = spec.reviewSchedulePreset;
+      }
       if (Object.keys(updates).length) {
         const { error } = await supabase
           .from("templates")
@@ -133,6 +157,34 @@ export async function ensureDefaultTemplates(supabase: Client, userId: string) {
     .from("templates")
     .update({ is_primary: true })
     .eq("id", investment.id);
+  if (error) throw error;
+}
+
+async function canUseTemplateName(
+  supabase: Client,
+  userId: string,
+  name: string,
+  currentTemplateId: string,
+) {
+  const { data, error } = await supabase
+    .from("templates")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("name", name)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) throw error;
+  return !data || data.id === currentTemplateId;
+}
+
+async function deleteObsoleteDefaultTemplates(supabase: Client, userId: string) {
+  const { error } = await supabase
+    .from("templates")
+    .delete()
+    .eq("user_id", userId)
+    .in("template_kind", OBSOLETE_DEFAULT_TEMPLATE_KINDS);
+
   if (error) throw error;
 }
 
@@ -358,6 +410,49 @@ export async function createOrOpenTemplateNote(
     }
     throw error;
   }
+
+  await Promise.all([
+    incrementTemplateUsage(supabase, template),
+    createReviewSchedulesForNote(supabase, userId, note, template),
+  ]);
+
+  return note;
+}
+
+export async function createNoteFromTemplateInFolder(
+  supabase: Client,
+  userId: string,
+  templateId: string,
+  folderId: string,
+) {
+  const { data: template, error: templateError } = await supabase
+    .from("templates")
+    .select("*")
+    .eq("id", templateId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .single();
+
+  if (templateError) throw templateError;
+
+  const { data: note, error } = await supabase
+    .from("notes")
+    .insert({
+      user_id: userId,
+      folder_id: folderId,
+      template_id: template.id,
+      title: template.name,
+      content: template.content,
+      content_json: template.content_json,
+      content_text: template.content_text,
+      note_date: todayISO(),
+      is_draft: false,
+      routine_key: null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
 
   await Promise.all([
     incrementTemplateUsage(supabase, template),

@@ -1,8 +1,14 @@
 "use client";
 
-import { ArrowDownToLine } from "lucide-react";
 import { formatKoreanDate } from "@/lib/date";
 import type { ReviewSourceItem } from "@/lib/types";
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function weekdayLabel(value: string) {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  return WEEKDAYS[date.getDay()] ?? "";
+}
 
 export function ReviewSourceCard({
   onMoveInput,
@@ -12,30 +18,27 @@ export function ReviewSourceCard({
   source: ReviewSourceItem;
 }) {
   return (
-    <>
-      <article className="my-4 rounded border border-[#d9dcd6] bg-white p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <h2 className="font-semibold">{source.title}</h2>
-          {source.item_type === "review_session" ? (
-            <span className="rounded bg-[#f5df92] px-2 py-0.5 text-xs text-[#69510f]">
-              복기
-            </span>
-          ) : null}
+    <article className="border-t border-bokgi-border-soft py-5 first:border-t-0">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bokgi-surface-muted text-xs font-semibold text-bokgi-muted">
+          {weekdayLabel(source.display_date)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-[17px] font-semibold leading-6">{source.title}</h2>
+          <p className="mt-0.5 text-xs text-bokgi-muted">
+            {formatKoreanDate(source.display_date)}
+          </p>
         </div>
-        <p className="mb-4 text-xs text-[#72786f]">
-          {formatKoreanDate(source.display_date)}
-        </p>
-        <p className="whitespace-pre-wrap leading-7 text-[#2d2a25]">
-          {source.content || "내용 없음"}
-        </p>
-      </article>
+      </div>
+      <p className="whitespace-pre-wrap text-[15px] leading-7 text-bokgi-ink-soft">
+        {source.content || "내용 없음"}
+      </p>
       <button
         onClick={onMoveInput}
-        className="mx-auto flex h-9 items-center gap-2 rounded-full border border-[#c8cec4] bg-white px-3 text-xs text-[#63685f]"
+        className="mt-4 h-9 rounded-full border border-bokgi-border bg-bokgi-surface px-3 text-xs font-medium text-bokgi-accent"
       >
-        <ArrowDownToLine size={15} />
-        여기로 복기 입력창 이동
+        여기에 복기 메모 쓰기
       </button>
-    </>
+    </article>
   );
 }

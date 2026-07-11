@@ -54,9 +54,9 @@ export function TrashPage() {
   return (
     <AppChrome>
       <h1 className="text-2xl font-semibold">휴지통</h1>
-      <p className="mt-1 text-sm text-[#63685f]">30일 후 완전 삭제 대상입니다.</p>
+      <p className="mt-1 text-sm text-bokgi-ink-soft">30일 후 완전 삭제 대상입니다.</p>
 
-      <div className="mt-5 divide-y divide-[#e1e3de] overflow-hidden rounded border border-[#d9dcd6] bg-white">
+      <div className="mt-5 divide-y divide-bokgi-border-soft overflow-hidden rounded border border-bokgi-border bg-bokgi-surface">
         {folders.map((folder) => (
           <TrashRow
             key={`folder:${folder.id}`}
@@ -88,7 +88,7 @@ export function TrashPage() {
           />
         ))}
         {!folders.length && !notes.length && !reviews.length ? (
-          <div className="px-4 py-10 text-center text-sm text-[#72786f]">
+          <div className="px-4 py-10 text-center text-sm text-bokgi-muted">
             휴지통이 비어 있습니다.
           </div>
         ) : null}
@@ -115,17 +115,17 @@ function TrashRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-medium">{title}</p>
-          <span className="rounded bg-[#e9ece5] px-2 py-0.5 text-xs text-[#63685f]">
+          <span className="rounded bg-bokgi-surface-muted px-2 py-0.5 text-xs text-bokgi-ink-soft">
             {typeLabel}
           </span>
         </div>
-        <p className="mt-1 text-xs text-[#72786f]">
+        <p className="mt-1 text-xs text-bokgi-muted">
           완전 삭제 예정일 {formatKoreanDate(deleteAfter)}
         </p>
       </div>
       <button
         onClick={onRestore}
-        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec]"
+        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
         title="복원"
         aria-label="복원"
       >
@@ -133,7 +133,7 @@ function TrashRow({
       </button>
       <button
         onClick={onDelete}
-        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#eef1ec]"
+        className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
         title="완전 삭제"
         aria-label="완전 삭제"
       >

@@ -59,12 +59,12 @@ export function FoldersPage() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">폴더</h1>
-          <p className="mt-1 text-sm text-[#63685f]">메모와 복기 세션을 모아둡니다.</p>
+          <p className="mt-1 text-sm text-bokgi-ink-soft">메모와 복기 세션을 모아둡니다.</p>
         </div>
         <button
           onClick={handleCreate}
           disabled={busy}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1f1f1f] text-white disabled:opacity-50"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-bokgi-primary text-bokgi-primary-on disabled:opacity-50"
           title="새 폴더"
           aria-label="새 폴더"
         >
@@ -72,18 +72,18 @@ export function FoldersPage() {
         </button>
       </div>
 
-      <div className="divide-y divide-[#e1e3de] overflow-hidden rounded border border-[#d9dcd6] bg-white">
+      <div className="divide-y divide-bokgi-border-soft overflow-hidden rounded border border-bokgi-border bg-bokgi-surface">
         {folders.map((folder) => (
           <div key={folder.id} className="flex items-center gap-3 px-4 py-4">
             <Link href={`/folders/${folder.id}`} className="min-w-0 flex-1">
               <p className="truncate font-medium">{folder.name}</p>
-              <p className="mt-1 text-xs text-[#72786f]">
+              <p className="mt-1 text-xs text-bokgi-muted">
                 최근 수정 {new Date(folder.updated_at).toLocaleDateString("ko-KR")}
               </p>
             </Link>
             <button
               onClick={() => handleRename(folder)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#63685f] hover:bg-[#eef1ec]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-bokgi-ink-soft hover:bg-bokgi-surface-hover"
               title="이름 수정"
               aria-label="이름 수정"
             >
@@ -91,7 +91,7 @@ export function FoldersPage() {
             </button>
             <button
               onClick={() => handleTrash(folder)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#63685f] hover:bg-[#eef1ec]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-bokgi-ink-soft hover:bg-bokgi-surface-hover"
               title="휴지통"
               aria-label="휴지통"
             >
@@ -100,7 +100,7 @@ export function FoldersPage() {
           </div>
         ))}
         {!folders.length ? (
-          <div className="px-4 py-10 text-center text-sm text-[#72786f]">
+          <div className="px-4 py-10 text-center text-sm text-bokgi-muted">
             <Archive className="mx-auto mb-3" size={24} />
             아직 폴더가 없습니다.
           </div>
