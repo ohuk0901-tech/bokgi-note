@@ -3,12 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleUserRound, Mail } from "lucide-react";
-import {
-  createSupabaseBrowserClient,
-  hasSupabaseEnv,
-  isGoogleLoginEnabled,
-} from "@/lib/supabase/browser";
+import { Mail } from "lucide-react";
+import { createSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase/browser";
 import { SetupNotice } from "@/components/SetupNotice";
 
 export function LoginPage() {
@@ -19,7 +15,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const googleLoginEnabled = isGoogleLoginEnabled();
 
   if (!configured) return <SetupNotice />;
 
@@ -53,16 +48,6 @@ export function LoginPage() {
     }
 
     router.replace("/dashboard");
-  }
-
-  async function handleGoogle() {
-    setBusy(true);
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
   }
 
   async function handlePasswordReset() {
@@ -130,17 +115,6 @@ export function LoginPage() {
             {mode === "login" ? "이메일로 로그인" : "이메일로 가입"}
           </button>
         </form>
-
-        {googleLoginEnabled ? (
-          <button
-            onClick={handleGoogle}
-            disabled={busy}
-            className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded border border-bokgi-border bg-bokgi-surface px-4 text-sm font-medium disabled:opacity-50"
-          >
-            <CircleUserRound size={18} />
-            Google로 계속하기
-          </button>
-        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-bokgi-ink-soft">
           <button
