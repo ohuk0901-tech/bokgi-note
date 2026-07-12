@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "이용 안내",
 };
 
-const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "베타 안내 글의 문의처";
+const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "ohuk0901@gmail.com";
 
 export default function TermsPage() {
   return (
