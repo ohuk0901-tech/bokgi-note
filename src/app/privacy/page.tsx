@@ -37,8 +37,7 @@ export default function PrivacyPage() {
           </InfoBlock>
           <InfoBlock title="외부 서비스">
             인증과 데이터 저장에는 Supabase, 웹앱 배포와 기본 방문 분석에는
-            Vercel이 사용됩니다. Google 로그인을 켠 경우 Google 인증이 함께
-            사용됩니다.
+            Vercel이 사용됩니다.
           </InfoBlock>
           <InfoBlock title="사용자가 주의할 점">
             계좌번호, 주민등록번호, 인증번호, 거래소 API 키처럼 노출되면 위험한

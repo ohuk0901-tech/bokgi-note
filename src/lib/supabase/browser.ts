@@ -10,10 +10,6 @@ export function hasSupabaseEnv() {
   );
 }
 
-export function isGoogleLoginEnabled() {
-  return process.env.NEXT_PUBLIC_ENABLE_GOOGLE_LOGIN === "true";
-}
-
 export function createSupabaseBrowserClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
