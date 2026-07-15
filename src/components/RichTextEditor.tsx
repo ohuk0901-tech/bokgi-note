@@ -50,6 +50,8 @@ const initialToolbarState: ToolbarState = {
   isTaskList: false,
 };
 
+const IOS_KEYBOARD_ACCESSORY_OFFSET = 64;
+
 export function RichTextEditor({
   contentJson,
   minHeight = "60vh",
@@ -178,7 +180,10 @@ export function RichTextEditor({
         0,
         window.innerHeight - viewport.height - viewport.offsetTop,
       );
-      setMobileToolbarBottom(Math.round(keyboardOffset + 10));
+      const iosAccessoryOffset =
+        keyboardOffset > 0 && isIOSBrowser() ? IOS_KEYBOARD_ACCESSORY_OFFSET : 0;
+
+      setMobileToolbarBottom(Math.round(keyboardOffset + iosAccessoryOffset + 10));
     };
 
     updateBottomOffset();
@@ -314,6 +319,14 @@ export function RichTextEditor({
       </div>
     </div>
   );
+}
+
+function isIOSBrowser() {
+  const platform = window.navigator.platform;
+  const userAgent = window.navigator.userAgent;
+  const isTouchMac = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+
+  return /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
 }
 
 function handleListTab(editor: Editor, direction: "in" | "out") {
