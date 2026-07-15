@@ -50,7 +50,7 @@ const initialToolbarState: ToolbarState = {
   isTaskList: false,
 };
 
-const IOS_KEYBOARD_ACCESSORY_OFFSET = 64;
+const IOS_KEYBOARD_ACCESSORY_OFFSET = 58;
 
 export function RichTextEditor({
   contentJson,
@@ -183,7 +183,7 @@ export function RichTextEditor({
       const iosAccessoryOffset =
         keyboardOffset > 0 && isIOSBrowser() ? IOS_KEYBOARD_ACCESSORY_OFFSET : 0;
 
-      setMobileToolbarBottom(Math.round(keyboardOffset + iosAccessoryOffset + 10));
+      setMobileToolbarBottom(Math.round(iosAccessoryOffset + 10));
     };
 
     updateBottomOffset();
