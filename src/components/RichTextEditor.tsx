@@ -140,13 +140,17 @@ export function RichTextEditor({
     });
   }, []);
 
+  const openMobileToolbar = useCallback(() => {
+    setHasMobileToolbarOpened(true);
+    updateToolbarState(editor);
+  }, [editor, updateToolbarState]);
+
   useEffect(() => {
     if (!editor) return;
 
     const handleFocus = () => {
       if (blurTimer.current) window.clearTimeout(blurTimer.current);
-      setHasMobileToolbarOpened(true);
-      updateToolbarState(editor);
+      openMobileToolbar();
     };
     const handleBlur = () => {
       blurTimer.current = window.setTimeout(() => {
@@ -170,7 +174,7 @@ export function RichTextEditor({
       editor.off("transaction", handleChange);
       editor.off("update", handleChange);
     };
-  }, [editor, updateToolbarState]);
+  }, [editor, openMobileToolbar, updateToolbarState]);
 
   function run(command: () => boolean) {
     command();
@@ -245,7 +249,13 @@ export function RichTextEditor({
           <IndentIncrease size={17} />
         </ToolbarButton>
       </div>
-      <EditorContent editor={editor} />
+      <div
+        onClick={openMobileToolbar}
+        onFocusCapture={openMobileToolbar}
+        onPointerDown={openMobileToolbar}
+      >
+        <EditorContent editor={editor} />
+      </div>
       <div
         className={`fixed left-3 right-3 z-50 flex items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-2xl backdrop-blur sm:hidden ${
           mobileToolbarVisible ? "opacity-100" : "pointer-events-none opacity-0"
