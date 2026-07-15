@@ -50,6 +50,8 @@ const initialToolbarState: ToolbarState = {
   isTaskList: false,
 };
 
+const IOS_ACCESSORY_BAR_BOTTOM = 76;
+
 export function RichTextEditor({
   contentJson,
   minHeight = "60vh",
@@ -63,7 +65,8 @@ export function RichTextEditor({
 }) {
   const isNormalizing = useRef(false);
   const blurTimer = useRef<number | undefined>(undefined);
-  const [isFocused, setIsFocused] = useState(false);
+  const [hasMobileToolbarOpened, setHasMobileToolbarOpened] = useState(false);
+  const [isIOS] = useState(() => typeof window !== "undefined" && isIOSBrowser());
   const [toolbarState, setToolbarState] = useState<ToolbarState>(initialToolbarState);
   const editor = useEditor({
     immediatelyRender: false,
@@ -142,12 +145,11 @@ export function RichTextEditor({
 
     const handleFocus = () => {
       if (blurTimer.current) window.clearTimeout(blurTimer.current);
-      setIsFocused(true);
+      setHasMobileToolbarOpened(true);
       updateToolbarState(editor);
     };
     const handleBlur = () => {
       blurTimer.current = window.setTimeout(() => {
-        setIsFocused(editor.isFocused);
         updateToolbarState(editor);
       }, 120);
     };
@@ -193,7 +195,10 @@ export function RichTextEditor({
     run(() => editor.chain().focus().liftListItem("listItem").run());
   }
 
-  const mobileToolbarVisible = Boolean(editor && isFocused);
+  const mobileToolbarVisible = Boolean(editor && hasMobileToolbarOpened);
+  const mobileToolbarBottom = isIOS
+    ? `calc(${IOS_ACCESSORY_BAR_BOTTOM}px + env(safe-area-inset-bottom, 0px))`
+    : "calc(10px + env(safe-area-inset-bottom, 0px))";
 
   return (
     <div className={`rich-text-editor ${mobileToolbarVisible ? "pb-[4.5rem] sm:pb-0" : ""}`}>
@@ -245,7 +250,7 @@ export function RichTextEditor({
         className={`fixed left-3 right-3 z-50 flex items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-2xl backdrop-blur sm:hidden ${
           mobileToolbarVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
-        style={{ bottom: "calc(10px + env(safe-area-inset-bottom, 0px))" }}
+        style={{ bottom: mobileToolbarBottom }}
       >
         <ToolbarButton
           disabled={!toolbarState.canUndo}
@@ -291,6 +296,14 @@ export function RichTextEditor({
       </div>
     </div>
   );
+}
+
+function isIOSBrowser() {
+  const platform = window.navigator.platform;
+  const userAgent = window.navigator.userAgent;
+  const isTouchMac = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+
+  return /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
 }
 
 function handleListTab(editor: Editor, direction: "in" | "out") {
