@@ -5,13 +5,15 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckSquare,
   IndentDecrease,
   IndentIncrease,
   List,
   ListOrdered,
+  Redo2,
+  Undo2,
 } from "lucide-react";
 import { normalizeEditorDoc } from "@/lib/editor";
 import type { Json } from "@/lib/types";
@@ -32,6 +34,22 @@ export type RichTextValue = {
   contentText: string;
 };
 
+type ToolbarState = {
+  canRedo: boolean;
+  canUndo: boolean;
+  isBulletList: boolean;
+  isOrderedList: boolean;
+  isTaskList: boolean;
+};
+
+const initialToolbarState: ToolbarState = {
+  canRedo: false,
+  canUndo: false,
+  isBulletList: false,
+  isOrderedList: false,
+  isTaskList: false,
+};
+
 export function RichTextEditor({
   contentJson,
   minHeight = "60vh",
@@ -44,6 +62,10 @@ export function RichTextEditor({
   onChange: (value: RichTextValue) => void;
 }) {
   const isNormalizing = useRef(false);
+  const blurTimer = useRef<number | undefined>(undefined);
+  const [isFocused, setIsFocused] = useState(false);
+  const [mobileToolbarBottom, setMobileToolbarBottom] = useState(10);
+  const [toolbarState, setToolbarState] = useState<ToolbarState>(initialToolbarState);
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -95,8 +117,85 @@ export function RichTextEditor({
     },
   });
 
+  const updateToolbarState = useCallback((currentEditor: Editor | null) => {
+    if (!currentEditor) {
+      setToolbarState(initialToolbarState);
+      return;
+    }
+
+    setToolbarState({
+      canRedo: currentEditor.can().redo(),
+      canUndo: currentEditor.can().undo(),
+      isBulletList: currentEditor.isActive("bulletList"),
+      isOrderedList: currentEditor.isActive("orderedList"),
+      isTaskList: currentEditor.isActive("taskList"),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleFocus = () => {
+      if (blurTimer.current) window.clearTimeout(blurTimer.current);
+      setIsFocused(true);
+      updateToolbarState(editor);
+    };
+    const handleBlur = () => {
+      blurTimer.current = window.setTimeout(() => {
+        setIsFocused(editor.isFocused);
+        updateToolbarState(editor);
+      }, 120);
+    };
+    const handleChange = () => updateToolbarState(editor);
+
+    handleChange();
+    editor.on("focus", handleFocus);
+    editor.on("blur", handleBlur);
+    editor.on("selectionUpdate", handleChange);
+    editor.on("transaction", handleChange);
+    editor.on("update", handleChange);
+
+    return () => {
+      if (blurTimer.current) window.clearTimeout(blurTimer.current);
+      editor.off("focus", handleFocus);
+      editor.off("blur", handleBlur);
+      editor.off("selectionUpdate", handleChange);
+      editor.off("transaction", handleChange);
+      editor.off("update", handleChange);
+    };
+  }, [editor, updateToolbarState]);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+
+    const updateBottomOffset = () => {
+      if (!viewport) {
+        setMobileToolbarBottom(10);
+        return;
+      }
+
+      const keyboardOffset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop,
+      );
+      setMobileToolbarBottom(Math.round(keyboardOffset + 10));
+    };
+
+    updateBottomOffset();
+    window.addEventListener("resize", updateBottomOffset);
+    viewport?.addEventListener("resize", updateBottomOffset);
+    viewport?.addEventListener("scroll", updateBottomOffset);
+
+    return () => {
+      window.removeEventListener("resize", updateBottomOffset);
+      viewport?.removeEventListener("resize", updateBottomOffset);
+      viewport?.removeEventListener("scroll", updateBottomOffset);
+    };
+  }, []);
+
   function run(command: () => boolean) {
     command();
+    window.setTimeout(() => updateToolbarState(editor), 0);
   }
 
   function indent() {
@@ -117,26 +216,42 @@ export function RichTextEditor({
     run(() => editor.chain().focus().liftListItem("listItem").run());
   }
 
+  const mobileToolbarVisible = Boolean(editor && isFocused);
+
   return (
-    <div className="rich-text-editor">
-      <div className="mb-3 flex flex-wrap gap-1 rounded border border-bokgi-border bg-bokgi-surface p-1">
+    <div className={`rich-text-editor ${mobileToolbarVisible ? "pb-[4.5rem] sm:pb-0" : ""}`}>
+      <div className="mb-3 hidden flex-wrap gap-1 rounded border border-bokgi-border bg-bokgi-surface p-1 sm:flex">
+        <ToolbarButton
+          disabled={!toolbarState.canUndo}
+          label="실행 취소"
+          onClick={() => run(() => editor?.chain().focus().undo().run() ?? false)}
+        >
+          <Undo2 size={17} />
+        </ToolbarButton>
+        <ToolbarButton
+          disabled={!toolbarState.canRedo}
+          label="다시 실행"
+          onClick={() => run(() => editor?.chain().focus().redo().run() ?? false)}
+        >
+          <Redo2 size={17} />
+        </ToolbarButton>
         <ToolbarButton
           label="불릿 목록"
-          active={Boolean(editor?.isActive("bulletList"))}
+          active={toolbarState.isBulletList}
           onClick={() => run(() => editor?.chain().focus().toggleBulletList().run() ?? false)}
         >
           <List size={17} />
         </ToolbarButton>
         <ToolbarButton
           label="번호 목록"
-          active={Boolean(editor?.isActive("orderedList"))}
+          active={toolbarState.isOrderedList}
           onClick={() => run(() => editor?.chain().focus().toggleOrderedList().run() ?? false)}
         >
           <ListOrdered size={17} />
         </ToolbarButton>
         <ToolbarButton
           label="체크박스"
-          active={Boolean(editor?.isActive("taskList"))}
+          active={toolbarState.isTaskList}
           onClick={() => run(() => editor?.chain().focus().toggleTaskList().run() ?? false)}
         >
           <CheckSquare size={17} />
@@ -149,6 +264,54 @@ export function RichTextEditor({
         </ToolbarButton>
       </div>
       <EditorContent editor={editor} />
+      <div
+        className={`fixed left-3 right-3 z-50 flex items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-2xl backdrop-blur sm:hidden ${
+          mobileToolbarVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        style={{ bottom: `calc(${mobileToolbarBottom}px + env(safe-area-inset-bottom, 0px))` }}
+      >
+        <ToolbarButton
+          disabled={!toolbarState.canUndo}
+          label="실행 취소"
+          onClick={() => run(() => editor?.chain().focus().undo().run() ?? false)}
+        >
+          <Undo2 size={18} />
+        </ToolbarButton>
+        <ToolbarButton
+          disabled={!toolbarState.canRedo}
+          label="다시 실행"
+          onClick={() => run(() => editor?.chain().focus().redo().run() ?? false)}
+        >
+          <Redo2 size={18} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="불릿 목록"
+          active={toolbarState.isBulletList}
+          onClick={() => run(() => editor?.chain().focus().toggleBulletList().run() ?? false)}
+        >
+          <List size={18} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="번호 목록"
+          active={toolbarState.isOrderedList}
+          onClick={() => run(() => editor?.chain().focus().toggleOrderedList().run() ?? false)}
+        >
+          <ListOrdered size={18} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="체크박스"
+          active={toolbarState.isTaskList}
+          onClick={() => run(() => editor?.chain().focus().toggleTaskList().run() ?? false)}
+        >
+          <CheckSquare size={18} />
+        </ToolbarButton>
+        <ToolbarButton label="내어쓰기" onClick={outdent}>
+          <IndentDecrease size={18} />
+        </ToolbarButton>
+        <ToolbarButton label="들여쓰기" onClick={indent}>
+          <IndentIncrease size={18} />
+        </ToolbarButton>
+      </div>
     </div>
   );
 }
@@ -181,11 +344,13 @@ function handleListTab(editor: Editor, direction: "in" | "out") {
 
 function ToolbarButton({
   active = false,
+  disabled = false,
   label,
   children,
   onClick,
 }: {
   active?: boolean;
+  disabled?: boolean;
   label: string;
   children: React.ReactNode;
   onClick: () => void;
@@ -193,9 +358,12 @@ function ToolbarButton({
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={`flex h-9 w-9 items-center justify-center rounded text-bokgi-ink-soft hover:bg-bokgi-surface-hover ${
-        active ? "bg-bokgi-primary text-bokgi-primary-on hover:bg-bokgi-primary" : ""
+      aria-disabled={disabled}
+      disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      onMouseDown={(event) => event.preventDefault()}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded text-bokgi-ink-soft hover:bg-bokgi-surface-hover disabled:cursor-not-allowed disabled:opacity-35 ${
+        active && !disabled ? "bg-bokgi-primary text-bokgi-primary-on hover:bg-bokgi-primary" : ""
       }`}
       aria-label={label}
       title={label}

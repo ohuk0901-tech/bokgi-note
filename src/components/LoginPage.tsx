@@ -25,29 +25,52 @@ export function LoginPage() {
     setBusy(true);
     setMessage("");
 
-    const redirectTo = `${window.location.origin}/auth/callback`;
-    const result =
-      mode === "signup"
-        ? await supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: redirectTo },
-          })
-        : await supabase.auth.signInWithPassword({ email, password });
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
 
-    setBusy(false);
-
-    if (result.error) {
-      setMessage(result.error.message);
+    if (!cleanEmail) {
+      setBusy(false);
+      setMessage("이메일을 입력해주세요.");
       return;
     }
 
-    if (mode === "signup") {
-      setMessage("인증 메일을 보냈습니다. 이메일 인증 후 로그인해주세요.");
+    if (password !== cleanPassword) {
+      setBusy(false);
+      setMessage("비밀번호 앞뒤에 공백이 들어갔습니다. 공백을 지우고 다시 입력해주세요.");
       return;
     }
 
-    router.replace("/dashboard");
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const result =
+        mode === "signup"
+          ? await supabase.auth.signUp({
+              email: cleanEmail,
+              password: cleanPassword,
+              options: { emailRedirectTo: redirectTo },
+            })
+          : await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: cleanPassword,
+            });
+
+      if (result.error) {
+        setMessage(getAuthErrorMessage(result.error.message));
+        return;
+      }
+
+      if (mode === "signup") {
+        setMessage("인증 메일을 보냈습니다. 이메일 인증 후 로그인해주세요.");
+        return;
+      }
+
+      router.replace("/dashboard");
+    } catch (error) {
+      console.error(error);
+      setMessage("로그인 요청을 완료하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handlePasswordReset() {
@@ -93,7 +116,12 @@ export function LoginPage() {
           <input
             className="h-12 w-full rounded border border-bokgi-border bg-bokgi-surface px-4 outline-none focus:border-bokgi-accent"
             type="email"
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect="off"
+            inputMode="email"
             placeholder="이메일"
+            spellCheck={false}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -101,7 +129,11 @@ export function LoginPage() {
           <input
             className="h-12 w-full rounded border border-bokgi-border bg-bokgi-surface px-4 outline-none focus:border-bokgi-accent"
             type="password"
+            autoCapitalize="none"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            autoCorrect="off"
             placeholder="비밀번호"
+            spellCheck={false}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -151,4 +183,30 @@ export function LoginPage() {
       </section>
     </main>
   );
+}
+
+function getAuthErrorMessage(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("invalid login credentials")) {
+    return "이메일 또는 비밀번호가 맞지 않습니다. 다시 확인해주세요.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "이메일 인증이 아직 완료되지 않았습니다. 메일함에서 인증 메일을 확인해주세요.";
+  }
+
+  if (normalized.includes("password should be at least")) {
+    return "비밀번호는 6자 이상으로 입력해주세요.";
+  }
+
+  if (normalized.includes("user already registered")) {
+    return "이미 가입된 이메일입니다. 로그인하거나 비밀번호 재설정을 이용해주세요.";
+  }
+
+  if (normalized.includes("fetch failed") || normalized.includes("network")) {
+    return "로그인 요청을 완료하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해주세요.";
+  }
+
+  return message || "로그인을 완료하지 못했습니다. 다시 시도해주세요.";
 }
