@@ -345,14 +345,20 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect="off"
             className="w-full bg-transparent text-[30px] font-semibold leading-tight tracking-[-0.03em] outline-none"
             placeholder="복기 제목"
+            spellCheck={false}
+            tabIndex={-1}
           />
           <input
             type="date"
             value={reviewDate}
             onChange={(event) => setReviewDate(event.target.value)}
             className="rounded-[12px] border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
+            tabIndex={-1}
           />
         </section>
 

@@ -50,8 +50,6 @@ const initialToolbarState: ToolbarState = {
   isTaskList: false,
 };
 
-const IOS_KEYBOARD_ACCESSORY_OFFSET = 58;
-
 export function RichTextEditor({
   contentJson,
   minHeight = "60vh",
@@ -66,7 +64,6 @@ export function RichTextEditor({
   const isNormalizing = useRef(false);
   const blurTimer = useRef<number | undefined>(undefined);
   const [isFocused, setIsFocused] = useState(false);
-  const [mobileToolbarBottom, setMobileToolbarBottom] = useState(10);
   const [toolbarState, setToolbarState] = useState<ToolbarState>(initialToolbarState);
   const editor = useEditor({
     immediatelyRender: false,
@@ -93,8 +90,14 @@ export function RichTextEditor({
       attributes: {
         class:
           "tiptap-editor w-full max-w-none bg-transparent text-lg leading-8 outline-none",
+        autocapitalize: "none",
+        autocomplete: "off",
+        autocorrect: "off",
         "data-placeholder": placeholder,
+        enterkeyhint: "default",
+        spellcheck: "false",
         style: `min-height: ${minHeight}`,
+        tabindex: "-1",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -166,37 +169,6 @@ export function RichTextEditor({
       editor.off("update", handleChange);
     };
   }, [editor, updateToolbarState]);
-
-  useEffect(() => {
-    const viewport = window.visualViewport;
-
-    const updateBottomOffset = () => {
-      if (!viewport) {
-        setMobileToolbarBottom(10);
-        return;
-      }
-
-      const keyboardOffset = Math.max(
-        0,
-        window.innerHeight - viewport.height - viewport.offsetTop,
-      );
-      const iosAccessoryOffset =
-        keyboardOffset > 0 && isIOSBrowser() ? IOS_KEYBOARD_ACCESSORY_OFFSET : 0;
-
-      setMobileToolbarBottom(Math.round(iosAccessoryOffset + 10));
-    };
-
-    updateBottomOffset();
-    window.addEventListener("resize", updateBottomOffset);
-    viewport?.addEventListener("resize", updateBottomOffset);
-    viewport?.addEventListener("scroll", updateBottomOffset);
-
-    return () => {
-      window.removeEventListener("resize", updateBottomOffset);
-      viewport?.removeEventListener("resize", updateBottomOffset);
-      viewport?.removeEventListener("scroll", updateBottomOffset);
-    };
-  }, []);
 
   function run(command: () => boolean) {
     command();
@@ -273,7 +245,7 @@ export function RichTextEditor({
         className={`fixed left-3 right-3 z-50 flex items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-2xl backdrop-blur sm:hidden ${
           mobileToolbarVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
-        style={{ bottom: `calc(${mobileToolbarBottom}px + env(safe-area-inset-bottom, 0px))` }}
+        style={{ bottom: "calc(10px + env(safe-area-inset-bottom, 0px))" }}
       >
         <ToolbarButton
           disabled={!toolbarState.canUndo}
@@ -319,14 +291,6 @@ export function RichTextEditor({
       </div>
     </div>
   );
-}
-
-function isIOSBrowser() {
-  const platform = window.navigator.platform;
-  const userAgent = window.navigator.userAgent;
-  const isTouchMac = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
-
-  return /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
 }
 
 function handleListTab(editor: Editor, direction: "in" | "out") {

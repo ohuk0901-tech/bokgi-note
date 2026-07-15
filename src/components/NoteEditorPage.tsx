@@ -256,14 +256,20 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          autoCapitalize="none"
+          autoComplete="off"
+          autoCorrect="off"
           className="w-full bg-transparent text-3xl font-semibold outline-none"
           placeholder={DEFAULT_NOTE_TITLE}
+          spellCheck={false}
+          tabIndex={-1}
         />
         <input
           type="date"
           value={noteDate}
           onChange={(event) => setNoteDate(event.target.value)}
           className="mt-3 rounded border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
+          tabIndex={-1}
         />
         {saveStatus === "error" ? (
           <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

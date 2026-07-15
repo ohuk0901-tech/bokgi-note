@@ -55,13 +55,19 @@ export function EditableReviewNoteCard({
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect="off"
         className="w-full bg-transparent font-semibold outline-none"
+        spellCheck={false}
+        tabIndex={-1}
       />
       <input
         type="date"
         value={noteDate}
         onChange={(event) => setNoteDate(event.target.value)}
         className="mt-3 rounded border border-bokgi-border px-3 py-2 text-sm"
+        tabIndex={-1}
       />
       {saveStatus === "error" ? (
         <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
