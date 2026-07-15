@@ -79,6 +79,7 @@ export function EditableReviewNoteCard({
           key={note.id}
           contentJson={contentJson}
           minHeight="8rem"
+          stickyToolbar
           onChange={(nextValue) => {
             const payload = toEditorPayload(
               nextValue.contentJson,

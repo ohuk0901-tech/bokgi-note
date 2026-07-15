@@ -280,6 +280,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           <RichTextEditor
             key={note.id}
             contentJson={contentJson}
+            stickyToolbar
             onChange={handleEditorChange}
           />
         </div>

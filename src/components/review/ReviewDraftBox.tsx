@@ -19,6 +19,7 @@ export function ReviewDraftBox({
         contentJson={contentJson}
         minHeight="12rem"
         placeholder="이번 주 메모를 읽고 반복된 판단, 감정, 다음 행동을 적어보세요"
+        stickyToolbar
         onChange={onChange}
       />
     </section>

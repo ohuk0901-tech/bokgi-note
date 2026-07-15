@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>복기노트 모바일 에디터 툴바 위치 예시</title>
+    <title>복기노트 모바일 작성 툴바 예시</title>
     <style>
       :root {
         --bg: #f5f5f7;
@@ -80,41 +80,47 @@
         font-weight: 700;
       }
 
-      .editor {
-        padding: 24px 30px 0;
-        font-size: 25px;
-        line-height: 1.65;
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px 10px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(245, 245, 247, 0.96);
       }
 
-      .editor .dot {
-        margin: 18px 0;
-        font-size: 34px;
-        line-height: 1;
+      .back {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 999px;
+        font-size: 28px;
+      }
+
+      .title {
+        min-width: 0;
+        flex: 1;
+        padding: 0 12px;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
       }
 
       .toolbar {
-        position: absolute;
-        left: 22px;
-        right: 22px;
-        z-index: 5;
+        position: sticky;
+        top: 0;
+        z-index: 3;
         display: flex;
         align-items: center;
-        gap: 10px;
-        height: 58px;
-        padding: 8px 12px;
+        gap: 8px;
+        margin: 0 18px 18px;
+        padding: 8px;
         border: 1px solid rgba(60, 60, 67, 0.12);
-        border-radius: 999px;
-        background: rgba(255, 254, 250, 0.95);
-        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.16);
+        border-radius: 18px;
+        background: rgba(255, 254, 250, 0.96);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         backdrop-filter: blur(18px);
-      }
-
-      .ios .toolbar {
-        bottom: 322px;
-      }
-
-      .android .toolbar {
-        bottom: 260px;
       }
 
       .tool {
@@ -124,7 +130,7 @@
         place-items: center;
         border-radius: 11px;
         color: rgba(29, 29, 31, 0.68);
-        font-size: 23px;
+        font-size: 22px;
         font-weight: 700;
       }
 
@@ -133,49 +139,49 @@
         color: white;
       }
 
-      .accessory {
-        position: absolute;
-        right: 20px;
-        bottom: 252px;
-        left: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 58px;
-        padding: 0 28px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
-        color: #1d1d1f;
+      .editor {
+        height: 560px;
+        overflow: hidden;
+        padding: 22px 26px 0;
+        font-size: 25px;
+        line-height: 1.65;
+      }
+
+      .field-title {
+        margin-bottom: 12px;
         font-size: 34px;
-        font-weight: 700;
+        font-weight: 750;
+        line-height: 1.2;
       }
 
-      .keyboard {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        height: 244px;
-        padding: 16px 12px 14px;
-        border-radius: 24px 24px 0 0;
-        background: #d8dbe0;
-      }
-
-      .keys {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(10, 1fr);
-      }
-
-      .key {
-        display: grid;
-        height: 48px;
-        place-items: center;
+      .date {
+        display: inline-block;
+        margin-bottom: 18px;
+        padding: 8px 11px;
+        border: 1px solid var(--border);
         border-radius: 12px;
-        background: white;
-        font-size: 24px;
-        font-weight: 600;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .dot {
+        margin: 16px 0;
+        font-size: 32px;
+        line-height: 1;
+      }
+
+      .keyboard-note {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+        padding: 13px 14px;
+        border: 1px dashed rgba(60, 60, 67, 0.22);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
       }
 
       .legend {
@@ -192,78 +198,88 @@
   </head>
   <body>
     <main>
-      <h1>모바일 에디터 툴바 위치 예시</h1>
+      <h1>모바일 작성 화면 상단 툴바 예시</h1>
       <p class="intro">
-        실제 iOS/Android 키보드는 브라우저 캡처에 표시되지 않으므로, 아래는 배치 의도를
-        설명하기 위한 정적 예시입니다.
+        iOS와 Android 키보드 위 영역은 브라우저마다 다르게 동작하므로, 작성 화면에서는 앱
+        내비게이션을 숨기고 에디터 툴바를 상단에 고정하는 방향을 기준으로 삼습니다.
       </p>
 
       <section class="grid">
         <article class="case">
           <h2>iPhone Safari / PWA</h2>
-          <p>애플 보조 바가 뜨는 것을 전제로, 복기노트 툴바는 그 위에 고정합니다.</p>
-          <div class="phone ios">
+          <p>애플 키보드 보조 바와 충돌하지 않도록 툴바를 화면 상단에 둡니다.</p>
+          <div class="phone">
             <div class="status"><span>9:48</span><span>◴ 43%</span></div>
+            <div class="topbar">
+              <span class="back">‹</span>
+              <span class="title">투자 일기</span>
+              <span class="back">⋯</span>
+            </div>
             <div class="editor">
-              <div class="dot">•</div>
-              <div>틀렸다면 무엇을 잘못 봤나?</div>
-              <div class="dot">•</div>
-              <div>반복되는 실수 또는 강점:</div>
-              <div class="dot">•</div>
-            </div>
-            <div class="toolbar" aria-label="복기노트 툴바">
-              <span class="tool">↶</span>
-              <span class="tool">↷</span>
-              <span class="tool active">☷</span>
-              <span class="tool">1.</span>
-              <span class="tool">☑</span>
-              <span class="tool">‹</span>
-              <span class="tool">›</span>
-            </div>
-            <div class="accessory" aria-label="iOS Safari 보조 바">
-              <span>⌃</span><span>⌄</span><span>✓</span>
-            </div>
-            <div class="keyboard">
-              <div class="keys">
-                <span class="key">ㅂ</span><span class="key">ㅈ</span><span class="key">ㄷ</span><span class="key">ㄱ</span><span class="key">ㅅ</span><span class="key">ㅛ</span><span class="key">ㅕ</span><span class="key">ㅑ</span><span class="key">ㅐ</span><span class="key">ㅔ</span>
-                <span class="key">ㅁ</span><span class="key">ㄴ</span><span class="key">ㅇ</span><span class="key">ㄹ</span><span class="key">ㅎ</span><span class="key">ㅗ</span><span class="key">ㅓ</span><span class="key">ㅏ</span><span class="key">ㅣ</span><span class="key">⌫</span>
-                <span class="key">123</span><span class="key">ㅋ</span><span class="key">ㅌ</span><span class="key">ㅊ</span><span class="key">ㅍ</span><span class="key">ㅠ</span><span class="key">ㅜ</span><span class="key">ㅡ</span><span class="key">⏎</span><span class="key">🎙</span>
+              <div class="field-title">투자 일기</div>
+              <span class="date">2026-07-16</span>
+              <div class="toolbar" aria-label="복기노트 작성 툴바">
+                <span class="tool">↶</span>
+                <span class="tool">↷</span>
+                <span class="tool active">☷</span>
+                <span class="tool">1.</span>
+                <span class="tool">☑</span>
+                <span class="tool">‹</span>
+                <span class="tool">›</span>
               </div>
+              <div class="dot">•</div>
+              <div>오늘 내가 본 시장의 핵심 변화:</div>
+              <div class="dot">•</div>
+              <div>내 판단의 이유와 감정:</div>
+              <div class="dot">•</div>
+              <div>나중에 다시 확인할 것:</div>
+            </div>
+            <div class="keyboard-note">
+              키보드가 올라와도 툴바는 키보드 위가 아니라 작성 화면 상단에 남습니다.
             </div>
           </div>
-          <div class="legend">iOS: 키보드 위 보조 바를 없애지 않고, 그 위에 앱 툴바를 고정합니다.</div>
+          <div class="legend">
+            iOS의 위/아래 화살표, 완료 버튼 같은 기본 보조 바를 없애기 어렵기 때문에, 그 영역과
+            경쟁하지 않는 배치를 선택합니다.
+          </div>
         </article>
 
         <article class="case">
           <h2>Android Chrome</h2>
-          <p>iOS 보조 바가 없으므로, 복기노트 툴바는 키보드 바로 위에 낮게 고정합니다.</p>
-          <div class="phone android">
-            <div class="status"><span>9:48</span><span>◴ 43%</span></div>
+          <p>Android에서도 같은 상단 툴바를 사용해 플랫폼별 위치 차이를 줄입니다.</p>
+          <div class="phone">
+            <div class="status"><span>21:48</span><span>5G 43%</span></div>
+            <div class="topbar">
+              <span class="back">‹</span>
+              <span class="title">주간 복기</span>
+              <span class="back">✓</span>
+            </div>
             <div class="editor">
-              <div class="dot">•</div>
-              <div>틀렸다면 무엇을 잘못 봤나?</div>
-              <div class="dot">•</div>
-              <div>반복되는 실수 또는 강점:</div>
-              <div class="dot">•</div>
-            </div>
-            <div class="toolbar" aria-label="복기노트 툴바">
-              <span class="tool">↶</span>
-              <span class="tool">↷</span>
-              <span class="tool active">☷</span>
-              <span class="tool">1.</span>
-              <span class="tool">☑</span>
-              <span class="tool">‹</span>
-              <span class="tool">›</span>
-            </div>
-            <div class="keyboard">
-              <div class="keys">
-                <span class="key">q</span><span class="key">w</span><span class="key">e</span><span class="key">r</span><span class="key">t</span><span class="key">y</span><span class="key">u</span><span class="key">i</span><span class="key">o</span><span class="key">p</span>
-                <span class="key">a</span><span class="key">s</span><span class="key">d</span><span class="key">f</span><span class="key">g</span><span class="key">h</span><span class="key">j</span><span class="key">k</span><span class="key">l</span><span class="key">⌫</span>
-                <span class="key">123</span><span class="key">z</span><span class="key">x</span><span class="key">c</span><span class="key">v</span><span class="key">b</span><span class="key">n</span><span class="key">m</span><span class="key">⏎</span><span class="key">🎙</span>
+              <div class="field-title">주간 복기</div>
+              <span class="date">2026-07-16</span>
+              <div class="toolbar" aria-label="복기노트 작성 툴바">
+                <span class="tool">↶</span>
+                <span class="tool">↷</span>
+                <span class="tool">☷</span>
+                <span class="tool active">1.</span>
+                <span class="tool">☑</span>
+                <span class="tool">‹</span>
+                <span class="tool">›</span>
               </div>
+              <div>1. 이번 주 반복된 판단 패턴:</div>
+              <div class="dot">•</div>
+              <div>2. 고쳐야 할 행동:</div>
+              <div class="dot">•</div>
+              <div>3. 다음 주에 지킬 원칙:</div>
+            </div>
+            <div class="keyboard-note">
+              Android 키보드 높이가 달라도 툴바 위치는 흔들리지 않습니다.
             </div>
           </div>
-          <div class="legend">Android: 별도 iOS 보조 바가 없으므로 툴바를 키보드 가까이에 둡니다.</div>
+          <div class="legend">
+            사용자는 글이 길어져도 위로 돌아가지 않고, 스크롤 중에도 상단 툴바를 계속 사용할 수
+            있습니다.
+          </div>
         </article>
       </section>
     </main>

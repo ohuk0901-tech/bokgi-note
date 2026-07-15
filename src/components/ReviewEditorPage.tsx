@@ -372,7 +372,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-[22px] border border-bokgi-border bg-bokgi-surface px-4 py-1">
+          <div className="rounded-[22px] border border-bokgi-border bg-bokgi-surface px-4 py-1">
             {sources.map((source, index) => (
               <div key={`${source.item_type}:${source.id}`}>
                 <ReviewSourceCard

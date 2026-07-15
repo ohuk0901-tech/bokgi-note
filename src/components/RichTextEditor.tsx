@@ -50,26 +50,21 @@ const initialToolbarState: ToolbarState = {
   isTaskList: false,
 };
 
-const IOS_ACCESSORY_BAR_FALLBACK = 76;
-const KEYBOARD_INSET_THRESHOLD = 80;
-const MOBILE_TOOLBAR_GAP = 10;
-
 export function RichTextEditor({
   contentJson,
   minHeight = "60vh",
   placeholder = "내용을 입력하세요",
+  stickyToolbar = false,
   onChange,
 }: {
   contentJson: Json;
   minHeight?: string;
   placeholder?: string;
+  stickyToolbar?: boolean;
   onChange: (value: RichTextValue) => void;
 }) {
   const isNormalizing = useRef(false);
   const blurTimer = useRef<number | undefined>(undefined);
-  const [hasMobileToolbarOpened, setHasMobileToolbarOpened] = useState(false);
-  const [isIOS] = useState(() => typeof window !== "undefined" && isIOSBrowser());
-  const [mobileToolbarBottom, setMobileToolbarBottom] = useState(`${MOBILE_TOOLBAR_GAP}px`);
   const [toolbarState, setToolbarState] = useState<ToolbarState>(initialToolbarState);
   const editor = useEditor({
     immediatelyRender: false,
@@ -143,23 +138,12 @@ export function RichTextEditor({
     });
   }, []);
 
-  const updateMobileToolbarPosition = useCallback(() => {
-    if (typeof window === "undefined") return;
-    setMobileToolbarBottom(getMobileToolbarBottom(isIOS));
-  }, [isIOS]);
-
-  const openMobileToolbar = useCallback(() => {
-    setHasMobileToolbarOpened(true);
-    updateMobileToolbarPosition();
-    updateToolbarState(editor);
-  }, [editor, updateMobileToolbarPosition, updateToolbarState]);
-
   useEffect(() => {
     if (!editor) return;
 
     const handleFocus = () => {
       if (blurTimer.current) window.clearTimeout(blurTimer.current);
-      openMobileToolbar();
+      updateToolbarState(editor);
     };
     const handleBlur = () => {
       blurTimer.current = window.setTimeout(() => {
@@ -183,40 +167,10 @@ export function RichTextEditor({
       editor.off("transaction", handleChange);
       editor.off("update", handleChange);
     };
-  }, [editor, openMobileToolbar, updateToolbarState]);
-
-  const mobileToolbarVisible = Boolean(editor && hasMobileToolbarOpened);
-
-  useEffect(() => {
-    if (!mobileToolbarVisible) return;
-
-    let frame: number | undefined;
-    const visualViewport = window.visualViewport;
-    const schedulePositionUpdate = () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(updateMobileToolbarPosition);
-    };
-
-    schedulePositionUpdate();
-    window.addEventListener("resize", schedulePositionUpdate);
-    window.addEventListener("orientationchange", schedulePositionUpdate);
-    window.addEventListener("scroll", schedulePositionUpdate, { passive: true });
-    visualViewport?.addEventListener("resize", schedulePositionUpdate);
-    visualViewport?.addEventListener("scroll", schedulePositionUpdate);
-
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", schedulePositionUpdate);
-      window.removeEventListener("orientationchange", schedulePositionUpdate);
-      window.removeEventListener("scroll", schedulePositionUpdate);
-      visualViewport?.removeEventListener("resize", schedulePositionUpdate);
-      visualViewport?.removeEventListener("scroll", schedulePositionUpdate);
-    };
-  }, [mobileToolbarVisible, updateMobileToolbarPosition]);
+  }, [editor, updateToolbarState]);
 
   function run(command: () => boolean) {
     command();
-    updateMobileToolbarPosition();
     window.setTimeout(() => updateToolbarState(editor), 0);
   }
 
@@ -239,8 +193,12 @@ export function RichTextEditor({
   }
 
   return (
-    <div className={`rich-text-editor ${mobileToolbarVisible ? "pb-[4.5rem] sm:pb-0" : ""}`}>
-      <div className="mb-3 hidden flex-wrap gap-1 rounded border border-bokgi-border bg-bokgi-surface p-1 sm:flex">
+    <div className="rich-text-editor">
+      <div
+        className={`${
+          stickyToolbar ? "sticky top-0 z-30 -mx-1 mb-4" : "mb-3"
+        } flex max-w-full items-center gap-1 overflow-x-auto rounded-[18px] border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur`}
+      >
         <ToolbarButton
           disabled={!toolbarState.canUndo}
           label="실행 취소"
@@ -283,101 +241,9 @@ export function RichTextEditor({
           <IndentIncrease size={17} />
         </ToolbarButton>
       </div>
-      <div
-        onClick={openMobileToolbar}
-        onFocusCapture={openMobileToolbar}
-        onPointerDown={openMobileToolbar}
-      >
-        <EditorContent editor={editor} />
-      </div>
-      <div
-        className={`fixed left-3 right-3 z-50 flex items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-2xl backdrop-blur transition-[bottom,opacity] duration-150 sm:hidden ${
-          mobileToolbarVisible ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        style={{
-          bottom: `calc(${mobileToolbarBottom} + env(safe-area-inset-bottom, 0px))`,
-          transform: "translateZ(0)",
-        }}
-      >
-        <ToolbarButton
-          disabled={!toolbarState.canUndo}
-          label="실행 취소"
-          onClick={() => run(() => editor?.chain().focus().undo().run() ?? false)}
-        >
-          <Undo2 size={18} />
-        </ToolbarButton>
-        <ToolbarButton
-          disabled={!toolbarState.canRedo}
-          label="다시 실행"
-          onClick={() => run(() => editor?.chain().focus().redo().run() ?? false)}
-        >
-          <Redo2 size={18} />
-        </ToolbarButton>
-        <ToolbarButton
-          label="불릿 목록"
-          active={toolbarState.isBulletList}
-          onClick={() => run(() => editor?.chain().focus().toggleBulletList().run() ?? false)}
-        >
-          <List size={18} />
-        </ToolbarButton>
-        <ToolbarButton
-          label="번호 목록"
-          active={toolbarState.isOrderedList}
-          onClick={() => run(() => editor?.chain().focus().toggleOrderedList().run() ?? false)}
-        >
-          <ListOrdered size={18} />
-        </ToolbarButton>
-        <ToolbarButton
-          label="체크박스"
-          active={toolbarState.isTaskList}
-          onClick={() => run(() => editor?.chain().focus().toggleTaskList().run() ?? false)}
-        >
-          <CheckSquare size={18} />
-        </ToolbarButton>
-        <ToolbarButton label="내어쓰기" onClick={outdent}>
-          <IndentDecrease size={18} />
-        </ToolbarButton>
-        <ToolbarButton label="들여쓰기" onClick={indent}>
-          <IndentIncrease size={18} />
-        </ToolbarButton>
-      </div>
+      <EditorContent editor={editor} />
     </div>
   );
-}
-
-function isIOSBrowser() {
-  const platform = window.navigator.platform;
-  const userAgent = window.navigator.userAgent;
-  const isTouchMac = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
-
-  return /iPad|iPhone|iPod/.test(userAgent) || isTouchMac;
-}
-
-function getMobileToolbarBottom(isIOS: boolean) {
-  const visualViewport = window.visualViewport;
-
-  if (!visualViewport) {
-    return `${isIOS ? IOS_ACCESSORY_BAR_FALLBACK : MOBILE_TOOLBAR_GAP}px`;
-  }
-
-  const viewportBottomInset = Math.max(
-    0,
-    window.innerHeight - visualViewport.height - visualViewport.offsetTop,
-  );
-  const keyboardLikelyOpen =
-    viewportBottomInset > KEYBOARD_INSET_THRESHOLD ||
-    visualViewport.height < window.innerHeight * 0.8;
-  const iosFallbackInset =
-    isIOS && keyboardLikelyOpen && viewportBottomInset < IOS_ACCESSORY_BAR_FALLBACK
-      ? IOS_ACCESSORY_BAR_FALLBACK
-      : 0;
-  const bottom = Math.max(
-    MOBILE_TOOLBAR_GAP,
-    Math.round(viewportBottomInset + MOBILE_TOOLBAR_GAP),
-    iosFallbackInset + MOBILE_TOOLBAR_GAP,
-  );
-
-  return `${bottom}px`;
 }
 
 function handleListTab(editor: Editor, direction: "in" | "out") {

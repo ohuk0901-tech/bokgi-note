@@ -40,6 +40,7 @@ export function AppChrome({
 
   const homeActive = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
   const foldersActive = pathname === "/folders" || pathname.startsWith("/folders/");
+  const isEditorRoute = pathname.startsWith("/notes/") || pathname.startsWith("/reviews/");
 
   async function openQuickNoteSheet() {
     setAccountMenuOpen(false);
@@ -110,67 +111,71 @@ export function AppChrome({
 
   return (
     <div className="min-h-screen bg-bokgi-bg text-bokgi-ink">
-      <header className="sticky top-0 z-20 border-b border-bokgi-border bg-bokgi-bg/95 backdrop-blur">
-        <div className="relative mx-auto flex max-w-2xl items-center gap-2 px-3 py-3">
-          <Link
-            href="/dashboard"
-            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-bokgi-surface shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
-            aria-label="홈"
-          >
-            <Image
-              src="/apple-touch-icon.png"
-              alt=""
-              width={32}
-              height={32}
-              className="rounded-[10px]"
-            />
-          </Link>
+      {!isEditorRoute ? (
+        <header className="sticky top-0 z-20 border-b border-bokgi-border bg-bokgi-bg/95 backdrop-blur">
+          <div className="relative mx-auto flex max-w-2xl items-center gap-2 px-3 py-3">
+            <Link
+              href="/dashboard"
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-bokgi-surface shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+              aria-label="홈"
+            >
+              <Image
+                src="/apple-touch-icon.png"
+                alt=""
+                width={32}
+                height={32}
+                className="rounded-[10px]"
+              />
+            </Link>
 
-          <nav
-            aria-label="주요 이동"
-            className="flex min-w-0 flex-1 items-center gap-2"
-          >
-            <TopNavLink href="/dashboard" label="홈" active={homeActive} emphasis>
-              <Home size={15} />
-            </TopNavLink>
-            <TopNavLink href="/folders" label="폴더" active={foldersActive}>
-              <FolderIcon size={15} />
-            </TopNavLink>
+            <nav
+              aria-label="주요 이동"
+              className="flex min-w-0 flex-1 items-center gap-2"
+            >
+              <TopNavLink href="/dashboard" label="홈" active={homeActive} emphasis>
+                <Home size={15} />
+              </TopNavLink>
+              <TopNavLink href="/folders" label="폴더" active={foldersActive}>
+                <FolderIcon size={15} />
+              </TopNavLink>
+              <button
+                type="button"
+                onClick={openQuickNoteSheet}
+                className="flex h-10 min-w-[76px] flex-1 items-center justify-center gap-1.5 rounded-[17px] border border-bokgi-border bg-bokgi-surface px-3 text-sm font-semibold text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+                aria-label="새 메모"
+              >
+                <SquarePen size={16} />
+                메모
+              </button>
+            </nav>
+
             <button
               type="button"
-              onClick={openQuickNoteSheet}
-              className="flex h-10 min-w-[76px] flex-1 items-center justify-center gap-1.5 rounded-[17px] border border-bokgi-border bg-bokgi-surface px-3 text-sm font-semibold text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.06)] transition hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
-              aria-label="새 메모"
+              onClick={() => setAccountMenuOpen((value) => !value)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:text-bokgi-ink"
+              aria-label="개인 메뉴"
+              aria-expanded={accountMenuOpen}
             >
-              <SquarePen size={16} />
-              메모
+              <UserCircle size={22} />
             </button>
-          </nav>
 
-          <button
-            type="button"
-            onClick={() => setAccountMenuOpen((value) => !value)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:text-bokgi-ink"
-            aria-label="개인 메뉴"
-            aria-expanded={accountMenuOpen}
-          >
-            <UserCircle size={22} />
-          </button>
+            {accountMenuOpen ? (
+              <nav className="absolute right-3 top-[54px] z-30 w-32 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+                <MenuLink href="/settings" label="설정" onClick={() => setAccountMenuOpen(false)}>
+                  <Settings size={16} />
+                </MenuLink>
+                <MenuLink href="/trash" label="휴지통" onClick={() => setAccountMenuOpen(false)}>
+                  <Trash2 size={16} />
+                </MenuLink>
+              </nav>
+            ) : null}
+          </div>
+        </header>
+      ) : null}
 
-          {accountMenuOpen ? (
-            <nav className="absolute right-3 top-[54px] z-30 w-32 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
-              <MenuLink href="/settings" label="설정" onClick={() => setAccountMenuOpen(false)}>
-                <Settings size={16} />
-              </MenuLink>
-              <MenuLink href="/trash" label="휴지통" onClick={() => setAccountMenuOpen(false)}>
-                <Trash2 size={16} />
-              </MenuLink>
-            </nav>
-          ) : null}
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-2xl px-4 py-5">{children}</div>
+      <div className={`mx-auto max-w-2xl px-4 ${isEditorRoute ? "py-3" : "py-5"}`}>
+        {children}
+      </div>
 
       {quickSheetOpen ? (
         <TemplatePickerSheet
