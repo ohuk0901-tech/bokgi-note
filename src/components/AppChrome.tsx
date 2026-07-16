@@ -173,7 +173,13 @@ export function AppChrome({
         </header>
       ) : null}
 
-      <div className={`mx-auto max-w-2xl px-4 ${isEditorRoute ? "py-3" : "py-5"}`}>
+      <div
+        className={`mx-auto max-w-2xl px-4 ${
+          isEditorRoute
+            ? "pb-5 pt-[calc(4.5rem+env(safe-area-inset-top,0px))]"
+            : "py-5"
+        }`}
+      >
         {children}
       </div>
 

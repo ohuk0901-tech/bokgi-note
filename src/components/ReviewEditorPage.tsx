@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MoreHorizontal, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
@@ -47,6 +47,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [completing, setCompleting] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
   const latest = useRef({
     review: null as ReviewSession | null,
@@ -294,10 +295,64 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     }
   }
 
+  const toolbarLeading = (
+    <Link
+      href={backHref ?? `/folders/${review.folder_id}`}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+      aria-label="뒤로"
+      title="뒤로"
+    >
+      <ArrowLeft size={19} />
+    </Link>
+  );
+  const toolbarTrailing = (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setActionMenuOpen((value) => !value)}
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+        aria-label="더보기"
+        aria-expanded={actionMenuOpen}
+        title="더보기"
+      >
+        <MoreHorizontal size={20} />
+      </button>
+      {actionMenuOpen ? (
+        <div className="absolute right-0 top-12 z-[70] w-40 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+          <button
+            type="button"
+            onClick={() => {
+              setActionMenuOpen(false);
+              void completeReview();
+            }}
+            disabled={completing}
+            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink disabled:opacity-50"
+          >
+            <CheckCircle2 size={16} />
+            {completing ? "저장 중" : "완료"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActionMenuOpen(false);
+              void handleTrash();
+            }}
+            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={16} />
+            휴지통으로 이동
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+
   const editor = (
     <ReviewDraftBox
       key={review.id}
       contentJson={contentJson}
+      toolbarLeading={toolbarLeading}
+      toolbarTrailing={toolbarTrailing}
       onChange={handleEditorChange}
     />
   );
@@ -306,35 +361,6 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   return (
     <AppChrome>
       <div className="mx-auto max-w-3xl pb-8">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <Link
-            href={backHref ?? `/folders/${review.folder_id}`}
-            className="flex items-center gap-1 text-sm font-medium text-bokgi-accent"
-          >
-            <ArrowLeft size={17} />
-            기록
-          </Link>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleTrash}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-bokgi-muted hover:bg-bokgi-surface-hover"
-              aria-label="휴지통"
-              title="휴지통"
-            >
-              <Trash2 size={17} />
-            </button>
-            <button
-              type="button"
-              onClick={completeReview}
-              disabled={completing}
-              className="text-sm font-semibold text-bokgi-accent disabled:opacity-40"
-            >
-              {completing ? "저장 중" : "완료"}
-            </button>
-          </div>
-        </div>
-
         {saveStatus === "error" ? (
           <p className="mb-4 rounded-[14px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             저장하지 못했습니다. 인터넷 연결을 확인해주세요.

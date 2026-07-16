@@ -5,9 +5,13 @@ import type { Json } from "@/lib/types";
 
 export function ReviewDraftBox({
   contentJson,
+  toolbarLeading,
+  toolbarTrailing,
   onChange,
 }: {
   contentJson: Json;
+  toolbarLeading?: React.ReactNode;
+  toolbarTrailing?: React.ReactNode;
   onChange: (value: RichTextValue) => void;
 }) {
   return (
@@ -20,6 +24,8 @@ export function ReviewDraftBox({
         minHeight="12rem"
         placeholder="이번 주 메모를 읽고 반복된 판단, 감정, 다음 행동을 적어보세요"
         stickyToolbar
+        toolbarLeading={toolbarLeading}
+        toolbarTrailing={toolbarTrailing}
         onChange={onChange}
       />
     </section>

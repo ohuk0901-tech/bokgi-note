@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Pin, PinOff, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MoreHorizontal, Pin, PinOff, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -36,6 +36,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [completeBusy, setCompleteBusy] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const reviewScheduleId = searchParams.get("reviewScheduleId");
   const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
   const latest = useRef({
@@ -211,47 +212,73 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     setContentText(payload.content_text);
   }
 
-  return (
-    <AppChrome>
-      <div className="mb-4 flex items-center justify-between">
-        <Link
-          href={backHref ?? `/folders/${note.folder_id}`}
-          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
-          aria-label="뒤로"
-          title="뒤로"
-        >
-          <ArrowLeft size={19} />
-        </Link>
-        <div className="flex items-center gap-3">
+  const toolbarLeading = (
+    <Link
+      href={backHref ?? `/folders/${note.folder_id}`}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+      aria-label="뒤로"
+      title="뒤로"
+    >
+      <ArrowLeft size={19} />
+    </Link>
+  );
+  const toolbarTrailing = (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setActionMenuOpen((value) => !value)}
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+        aria-label="더보기"
+        aria-expanded={actionMenuOpen}
+        title="더보기"
+      >
+        <MoreHorizontal size={20} />
+      </button>
+      {actionMenuOpen ? (
+        <div className="absolute right-0 top-12 z-[70] w-44 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
           {reviewScheduleId ? (
             <button
-              onClick={handleCompleteReview}
+              type="button"
+              onClick={() => {
+                setActionMenuOpen(false);
+                void handleCompleteReview();
+              }}
               disabled={completeBusy}
-              className="flex h-10 items-center gap-2 rounded-full bg-bokgi-accent px-3 text-xs font-medium text-bokgi-primary-on disabled:opacity-50"
+              className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink disabled:opacity-50"
             >
               <CheckCircle2 size={16} />
               복기 완료
             </button>
           ) : null}
           <button
-            onClick={handlePin}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
-            title={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
-            aria-label={currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
+            type="button"
+            onClick={() => {
+              setActionMenuOpen(false);
+              void handlePin();
+            }}
+            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
           >
-            {currentNote.is_pinned ? <PinOff size={18} /> : <Pin size={18} />}
+            {currentNote.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+            {currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
           </button>
           <button
-            onClick={handleTrash}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-bokgi-surface-hover"
-            title="휴지통"
-            aria-label="휴지통"
+            type="button"
+            onClick={() => {
+              setActionMenuOpen(false);
+              void handleTrash();
+            }}
+            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-red-600 hover:bg-red-50"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
+            휴지통으로 이동
           </button>
         </div>
-      </div>
+      ) : null}
+    </div>
+  );
 
+  return (
+    <AppChrome>
       <div className="mx-auto max-w-3xl">
         <input
           value={title}
@@ -281,6 +308,8 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
             key={note.id}
             contentJson={contentJson}
             stickyToolbar
+            toolbarLeading={toolbarLeading}
+            toolbarTrailing={toolbarTrailing}
             onChange={handleEditorChange}
           />
         </div>

@@ -80,57 +80,54 @@
         font-weight: 700;
       }
 
-      .topbar {
+      .commandbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 12px 20px 10px;
+        gap: 9px;
+        padding: 10px 14px 12px;
         border-bottom: 1px solid var(--border);
         background: rgba(245, 245, 247, 0.96);
+        backdrop-filter: blur(18px);
       }
 
-      .back {
+      .circle {
         display: grid;
-        width: 34px;
-        height: 34px;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 auto;
         place-items: center;
+        border: 1px solid var(--border);
         border-radius: 999px;
-        font-size: 28px;
+        background: var(--surface);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        color: rgba(29, 29, 31, 0.75);
+        font-size: 24px;
+        font-weight: 700;
       }
 
-      .title {
+      .tools {
+        display: flex;
         min-width: 0;
         flex: 1;
-        padding: 0 12px;
-        font-size: 15px;
-        font-weight: 700;
-        text-align: center;
-      }
-
-      .toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 3;
-        display: flex;
         align-items: center;
-        gap: 8px;
-        margin: 0 18px 18px;
-        padding: 8px;
-        border: 1px solid rgba(60, 60, 67, 0.12);
-        border-radius: 18px;
+        gap: 5px;
+        overflow-x: hidden;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
         background: rgba(255, 254, 250, 0.96);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-        backdrop-filter: blur(18px);
       }
 
       .tool {
         display: grid;
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 auto;
         place-items: center;
         border-radius: 11px;
         color: rgba(29, 29, 31, 0.68);
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
       }
 
@@ -140,9 +137,9 @@
       }
 
       .editor {
-        height: 560px;
+        height: 600px;
         overflow: hidden;
-        padding: 22px 26px 0;
+        padding: 26px;
         font-size: 25px;
         line-height: 1.65;
       }
@@ -156,7 +153,7 @@
 
       .date {
         display: inline-block;
-        margin-bottom: 18px;
+        margin-bottom: 22px;
         padding: 8px 11px;
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -198,27 +195,21 @@
   </head>
   <body>
     <main>
-      <h1>모바일 작성 화면 상단 툴바 예시</h1>
+      <h1>모바일 작성 화면 1줄 고정 툴바 예시</h1>
       <p class="intro">
-        iOS와 Android 키보드 위 영역은 브라우저마다 다르게 동작하므로, 작성 화면에서는 앱
-        내비게이션을 숨기고 에디터 툴바를 상단에 고정하는 방향을 기준으로 삼습니다.
+        뒤로가기는 왼쪽 원형 버튼, 자주 쓰는 작성 도구는 가운데 타원형 묶음, 기타 기능은 오른쪽
+        더보기 버튼으로 분리합니다.
       </p>
 
       <section class="grid">
         <article class="case">
           <h2>iPhone Safari / PWA</h2>
-          <p>애플 키보드 보조 바와 충돌하지 않도록 툴바를 화면 상단에 둡니다.</p>
+          <p>키보드 보조 바와 경쟁하지 않고, 작성 도구를 화면 상단에 고정합니다.</p>
           <div class="phone">
             <div class="status"><span>9:48</span><span>◴ 43%</span></div>
-            <div class="topbar">
-              <span class="back">‹</span>
-              <span class="title">투자 일기</span>
-              <span class="back">⋯</span>
-            </div>
-            <div class="editor">
-              <div class="field-title">투자 일기</div>
-              <span class="date">2026-07-16</span>
-              <div class="toolbar" aria-label="복기노트 작성 툴바">
+            <div class="commandbar">
+              <span class="circle">‹</span>
+              <div class="tools" aria-label="복기노트 작성 툴바">
                 <span class="tool">↶</span>
                 <span class="tool">↷</span>
                 <span class="tool active">☷</span>
@@ -227,6 +218,11 @@
                 <span class="tool">‹</span>
                 <span class="tool">›</span>
               </div>
+              <span class="circle">⋯</span>
+            </div>
+            <div class="editor">
+              <div class="field-title">투자 일기</div>
+              <span class="date">2026-07-16</span>
               <div class="dot">•</div>
               <div>오늘 내가 본 시장의 핵심 변화:</div>
               <div class="dot">•</div>
@@ -235,29 +231,22 @@
               <div>나중에 다시 확인할 것:</div>
             </div>
             <div class="keyboard-note">
-              키보드가 올라와도 툴바는 키보드 위가 아니라 작성 화면 상단에 남습니다.
+              키보드가 올라와도 이 한 줄 툴바는 화면 상단에 고정됩니다.
             </div>
           </div>
           <div class="legend">
-            iOS의 위/아래 화살표, 완료 버튼 같은 기본 보조 바를 없애기 어렵기 때문에, 그 영역과
-            경쟁하지 않는 배치를 선택합니다.
+            더보기에는 대표 메모 고정/해제, 휴지통 이동, 복기 완료 같은 덜 자주 쓰는 기능을 둡니다.
           </div>
         </article>
 
         <article class="case">
           <h2>Android Chrome</h2>
-          <p>Android에서도 같은 상단 툴바를 사용해 플랫폼별 위치 차이를 줄입니다.</p>
+          <p>Android에서도 같은 구조를 사용해 플랫폼별 차이를 줄입니다.</p>
           <div class="phone">
             <div class="status"><span>21:48</span><span>5G 43%</span></div>
-            <div class="topbar">
-              <span class="back">‹</span>
-              <span class="title">주간 복기</span>
-              <span class="back">✓</span>
-            </div>
-            <div class="editor">
-              <div class="field-title">주간 복기</div>
-              <span class="date">2026-07-16</span>
-              <div class="toolbar" aria-label="복기노트 작성 툴바">
+            <div class="commandbar">
+              <span class="circle">‹</span>
+              <div class="tools" aria-label="복기노트 작성 툴바">
                 <span class="tool">↶</span>
                 <span class="tool">↷</span>
                 <span class="tool">☷</span>
@@ -266,6 +255,11 @@
                 <span class="tool">‹</span>
                 <span class="tool">›</span>
               </div>
+              <span class="circle">⋯</span>
+            </div>
+            <div class="editor">
+              <div class="field-title">주간 복기</div>
+              <span class="date">2026-07-16</span>
               <div>1. 이번 주 반복된 판단 패턴:</div>
               <div class="dot">•</div>
               <div>2. 고쳐야 할 행동:</div>
@@ -273,12 +267,11 @@
               <div>3. 다음 주에 지킬 원칙:</div>
             </div>
             <div class="keyboard-note">
-              Android 키보드 높이가 달라도 툴바 위치는 흔들리지 않습니다.
+              가운데 타원형 도구 영역은 좁아지면 가로로 넘겨 보는 구조입니다.
             </div>
           </div>
           <div class="legend">
-            사용자는 글이 길어져도 위로 돌아가지 않고, 스크롤 중에도 상단 툴바를 계속 사용할 수
-            있습니다.
+            제목은 상단 툴바에 반복 표시하지 않고 본문 영역에 남겨 화면을 아낍니다.
           </div>
         </article>
       </section>
