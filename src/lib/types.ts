@@ -199,6 +199,7 @@ export type UnifiedItem = {
   item_type: "note" | "review_session";
   title: string;
   content: string;
+  content_json: Json;
   preview: string;
   display_date: string;
   created_at: string;

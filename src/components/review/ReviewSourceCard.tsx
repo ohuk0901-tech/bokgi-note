@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextViewer } from "@/components/RichTextViewer";
 import { formatKoreanDate } from "@/lib/date";
 import type { ReviewSourceItem } from "@/lib/types";
 
@@ -30,9 +31,10 @@ export function ReviewSourceCard({
           </p>
         </div>
       </div>
-      <p className="whitespace-pre-wrap text-[15px] leading-7 text-bokgi-ink-soft">
-        {source.content || "내용 없음"}
-      </p>
+      <RichTextViewer
+        content={source.content}
+        contentJson={source.content_json}
+      />
       <button
         onClick={onMoveInput}
         className="mt-4 h-9 rounded-full border border-bokgi-border bg-bokgi-surface px-3 text-xs font-medium text-bokgi-accent"

@@ -1,10 +1,7 @@
 "use client";
 
-import { Extension, type Editor, type JSONContent } from "@tiptap/core";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckSquare,
@@ -16,18 +13,8 @@ import {
   Undo2,
 } from "lucide-react";
 import { normalizeEditorDoc } from "@/lib/editor";
+import { createRichTextExtensions } from "@/lib/tiptapExtensions";
 import type { Json } from "@/lib/types";
-
-const ListTabGuard = Extension.create({
-  name: "listTabGuard",
-
-  addKeyboardShortcuts() {
-    return {
-      Tab: () => handleListTab(this.editor, "in"),
-      "Shift-Tab": () => handleListTab(this.editor, "out"),
-    };
-  },
-});
 
 export type RichTextValue = {
   contentJson: Json;
@@ -77,24 +64,7 @@ export function RichTextEditor({
   });
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        bulletList: {
-          HTMLAttributes: { class: "tiptap-bullet-list" },
-        },
-        orderedList: {
-          HTMLAttributes: { class: "tiptap-ordered-list" },
-        },
-      }),
-      TaskList.configure({
-        HTMLAttributes: { class: "tiptap-task-list" },
-      }),
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: { class: "tiptap-task-item" },
-      }),
-      ListTabGuard,
-    ],
+    extensions: createRichTextExtensions({ listTabGuard: true }),
     content: contentJson as JSONContent,
     editorProps: {
       attributes: {
@@ -310,32 +280,6 @@ export function RichTextEditor({
       <EditorContent editor={editor} />
     </div>
   );
-}
-
-function handleListTab(editor: Editor, direction: "in" | "out") {
-  const isTaskItem = editor.isActive("taskItem");
-  const isTextList =
-    editor.isActive("listItem") ||
-    editor.isActive("bulletList") ||
-    editor.isActive("orderedList");
-
-  if (!isTaskItem && !isTextList) return false;
-
-  if (direction === "in") {
-    if (isTaskItem) {
-      editor.chain().focus().sinkListItem("taskItem").run();
-    } else {
-      editor.chain().focus().sinkListItem("listItem").run();
-    }
-    return true;
-  }
-
-  if (isTaskItem) {
-    editor.chain().focus().liftListItem("taskItem").run();
-  } else {
-    editor.chain().focus().liftListItem("listItem").run();
-  }
-  return true;
 }
 
 function ToolbarButton({
