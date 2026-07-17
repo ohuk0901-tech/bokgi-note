@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, MoreHorizontal, Pin, PinOff, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  MoreHorizontal,
+  Pin,
+  PinOff,
+  Trash2,
+} from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -18,6 +26,7 @@ import {
   setNotePinned,
   trashNote,
 } from "@/lib/data";
+import { formatEditorDate } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
 import type { Json, Note } from "@/lib/types";
 
@@ -291,13 +300,18 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
           spellCheck={false}
           tabIndex={-1}
         />
-        <input
-          type="date"
-          value={noteDate}
-          onChange={(event) => setNoteDate(event.target.value)}
-          className="mt-3 rounded border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
-          tabIndex={-1}
-        />
+        <label className="relative mt-3 inline-flex h-9 items-center gap-2 overflow-hidden rounded-full border border-bokgi-border bg-bokgi-surface px-3 text-sm font-medium text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <CalendarDays size={15} />
+          <span>{formatEditorDate(noteDate)}</span>
+          <input
+            type="date"
+            value={noteDate}
+            onChange={(event) => setNoteDate(event.target.value)}
+            className="editor-date-input absolute inset-0 cursor-pointer opacity-0"
+            aria-label="메모 날짜 선택"
+            tabIndex={-1}
+          />
+        </label>
         {saveStatus === "error" ? (
           <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             저장하지 못했습니다. 인터넷 연결을 확인해주세요.

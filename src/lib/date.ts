@@ -48,6 +48,19 @@ export function formatKoreanDate(value: string | null | undefined) {
   return `${year}.${month}.${day}`;
 }
 
+const EDITOR_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  month: "long",
+  day: "numeric",
+  weekday: "long",
+});
+
+export function formatEditorDate(value: string | null | undefined) {
+  if (!value) return "날짜 선택";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "날짜 선택";
+  return EDITOR_DATE_FORMATTER.format(date);
+}
+
 export function defaultReviewTitle(date = todayISO()) {
   return `${formatKoreanDate(date)} 복기`;
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, MoreHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, MoreHorizontal, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
@@ -22,7 +22,7 @@ import {
   saveReview,
   trashReview,
 } from "@/lib/data";
-import { defaultReviewTitle } from "@/lib/date";
+import { defaultReviewTitle, formatEditorDate } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
 import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
@@ -379,13 +379,18 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
             spellCheck={false}
             tabIndex={-1}
           />
-          <input
-            type="date"
-            value={reviewDate}
-            onChange={(event) => setReviewDate(event.target.value)}
-            className="rounded-[12px] border border-bokgi-border bg-bokgi-surface px-3 py-2 text-sm text-bokgi-ink-soft outline-none"
-            tabIndex={-1}
-          />
+          <label className="relative inline-flex h-9 w-fit items-center gap-2 overflow-hidden rounded-full border border-bokgi-border bg-bokgi-surface px-3 text-sm font-medium text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <CalendarDays size={15} />
+            <span>{formatEditorDate(reviewDate)}</span>
+            <input
+              type="date"
+              value={reviewDate}
+              onChange={(event) => setReviewDate(event.target.value)}
+              className="editor-date-input absolute inset-0 cursor-pointer opacity-0"
+              aria-label="복기 날짜 선택"
+              tabIndex={-1}
+            />
+          </label>
         </section>
 
         <section className="space-y-3">

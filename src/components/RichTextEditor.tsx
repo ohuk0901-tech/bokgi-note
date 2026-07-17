@@ -69,7 +69,12 @@ export function RichTextEditor({
 }) {
   const isNormalizing = useRef(false);
   const blurTimer = useRef<number | undefined>(undefined);
+  const toolbarScrollRef = useRef<HTMLDivElement | null>(null);
   const [toolbarState, setToolbarState] = useState<ToolbarState>(initialToolbarState);
+  const [toolbarOverflow, setToolbarOverflow] = useState({
+    left: false,
+    right: false,
+  });
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -142,6 +147,17 @@ export function RichTextEditor({
     });
   }, []);
 
+  const updateToolbarOverflow = useCallback(() => {
+    const node = toolbarScrollRef.current;
+    if (!node) return;
+
+    const maxScrollLeft = node.scrollWidth - node.clientWidth;
+    setToolbarOverflow({
+      left: node.scrollLeft > 2,
+      right: maxScrollLeft - node.scrollLeft > 2,
+    });
+  }, []);
+
   useEffect(() => {
     if (!editor) return;
 
@@ -173,6 +189,12 @@ export function RichTextEditor({
     };
   }, [editor, updateToolbarState]);
 
+  useEffect(() => {
+    updateToolbarOverflow();
+    window.addEventListener("resize", updateToolbarOverflow);
+    return () => window.removeEventListener("resize", updateToolbarOverflow);
+  }, [updateToolbarOverflow]);
+
   function run(command: () => boolean) {
     command();
     window.setTimeout(() => updateToolbarState(editor), 0);
@@ -196,6 +218,70 @@ export function RichTextEditor({
     run(() => editor.chain().focus().liftListItem("listItem").run());
   }
 
+  const toolbar = (
+    <div
+      className={
+        stickyToolbar
+          ? "relative min-w-0 flex-1 overflow-hidden rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+          : "relative max-w-full overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur"
+      }
+    >
+      {toolbarOverflow.left ? (
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-bokgi-surface via-bokgi-surface/85 to-transparent" />
+      ) : null}
+      <div
+        ref={toolbarScrollRef}
+        onScroll={updateToolbarOverflow}
+        className="editor-toolbar-scroll flex min-w-0 items-center gap-1 overflow-x-auto scroll-smooth"
+      >
+        <ToolbarButton
+          disabled={!toolbarState.canUndo}
+          label="실행 취소"
+          onClick={() => run(() => editor?.chain().focus().undo().run() ?? false)}
+        >
+          <Undo2 size={17} />
+        </ToolbarButton>
+        <ToolbarButton
+          disabled={!toolbarState.canRedo}
+          label="다시 실행"
+          onClick={() => run(() => editor?.chain().focus().redo().run() ?? false)}
+        >
+          <Redo2 size={17} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="불릿 목록"
+          active={toolbarState.isBulletList}
+          onClick={() => run(() => editor?.chain().focus().toggleBulletList().run() ?? false)}
+        >
+          <List size={17} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="번호 목록"
+          active={toolbarState.isOrderedList}
+          onClick={() => run(() => editor?.chain().focus().toggleOrderedList().run() ?? false)}
+        >
+          <ListOrdered size={17} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="체크박스"
+          active={toolbarState.isTaskList}
+          onClick={() => run(() => editor?.chain().focus().toggleTaskList().run() ?? false)}
+        >
+          <CheckSquare size={17} />
+        </ToolbarButton>
+        <ToolbarButton label="내어쓰기" onClick={outdent}>
+          <IndentDecrease size={17} />
+        </ToolbarButton>
+        <ToolbarButton label="들여쓰기" onClick={indent}>
+          <IndentIncrease size={17} />
+        </ToolbarButton>
+      </div>
+      {toolbarOverflow.right ? (
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bokgi-surface via-bokgi-surface/85 to-transparent" />
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="rich-text-editor">
       <div
@@ -209,61 +295,13 @@ export function RichTextEditor({
           className={
             stickyToolbar
               ? "mx-auto flex max-w-2xl items-center gap-2"
-              : "flex max-w-full items-center gap-1 overflow-x-auto rounded-[18px] border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur"
+              : ""
           }
         >
           {stickyToolbar && toolbarLeading ? (
             <div className="shrink-0">{toolbarLeading}</div>
           ) : null}
-          <div
-            className={
-              stickyToolbar
-                ? "flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-full border border-bokgi-border bg-bokgi-surface/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
-                : "contents"
-            }
-          >
-            <ToolbarButton
-              disabled={!toolbarState.canUndo}
-              label="실행 취소"
-              onClick={() => run(() => editor?.chain().focus().undo().run() ?? false)}
-            >
-              <Undo2 size={17} />
-            </ToolbarButton>
-            <ToolbarButton
-              disabled={!toolbarState.canRedo}
-              label="다시 실행"
-              onClick={() => run(() => editor?.chain().focus().redo().run() ?? false)}
-            >
-              <Redo2 size={17} />
-            </ToolbarButton>
-            <ToolbarButton
-              label="불릿 목록"
-              active={toolbarState.isBulletList}
-              onClick={() => run(() => editor?.chain().focus().toggleBulletList().run() ?? false)}
-            >
-              <List size={17} />
-            </ToolbarButton>
-            <ToolbarButton
-              label="번호 목록"
-              active={toolbarState.isOrderedList}
-              onClick={() => run(() => editor?.chain().focus().toggleOrderedList().run() ?? false)}
-            >
-              <ListOrdered size={17} />
-            </ToolbarButton>
-            <ToolbarButton
-              label="체크박스"
-              active={toolbarState.isTaskList}
-              onClick={() => run(() => editor?.chain().focus().toggleTaskList().run() ?? false)}
-            >
-              <CheckSquare size={17} />
-            </ToolbarButton>
-            <ToolbarButton label="내어쓰기" onClick={outdent}>
-              <IndentDecrease size={17} />
-            </ToolbarButton>
-            <ToolbarButton label="들여쓰기" onClick={indent}>
-              <IndentIncrease size={17} />
-            </ToolbarButton>
-          </div>
+          {toolbar}
           {stickyToolbar && toolbarTrailing ? (
             <div className="shrink-0">{toolbarTrailing}</div>
           ) : null}
