@@ -67,7 +67,9 @@ export function DashboardPage() {
   async function openTemplate(template: Template) {
     setBusyTemplateId(template.id);
     try {
-      const note = await createOrOpenTemplateNote(client, currentUser.id, template.id);
+      const note = await createOrOpenTemplateNote(client, currentUser.id, template.id, {
+        source: "dashboard",
+      });
       router.push(`/notes/${note.id}?from=dashboard`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "메모를 만들지 못했습니다.");
@@ -78,7 +80,9 @@ export function DashboardPage() {
   async function openWeeklyReview() {
     setBusyWeeklyReview(true);
     try {
-      const review = await startWeeklyReview(client, currentUser.id);
+      const review = await startWeeklyReview(client, currentUser.id, todayISO(), {
+        source: "dashboard",
+      });
       router.push(`/reviews/${review.id}?from=dashboard`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "이번 주 복기를 시작하지 못했습니다.");

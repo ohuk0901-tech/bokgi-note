@@ -101,6 +101,7 @@ export function AppChrome({
         quickUserId,
         template.id,
         folder.id,
+        { source: "app_chrome" },
       );
       router.push(`/notes/${note.id}`);
     } catch (error) {

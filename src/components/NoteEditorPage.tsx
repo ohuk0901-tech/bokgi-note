@@ -19,18 +19,34 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { useAutoSave } from "@/components/useAutoSave";
 import { useRequireAuth } from "@/components/useRequireAuth";
 import {
+  changedTextLength,
   completeReviewSchedule,
+  daysFromToday,
   deleteBlankDraftNote,
   getNote,
+  isMeaningfulTextChange,
   saveNote,
   setNotePinned,
+  textChangeBucket,
+  trackAnalyticsEvent,
   trashNote,
 } from "@/lib/data";
 import { formatEditorDate } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
-import type { Json, Note } from "@/lib/types";
+import type { Json, Note, ReviewSchedule, TemplateKind } from "@/lib/types";
 
 const DEFAULT_NOTE_TITLE = "제목 없음";
+
+type NoteAnalyticsContext = {
+  baselineContentText: string;
+  dueReviewNoteEdited: boolean;
+  dueReviewSchedule: Pick<
+    ReviewSchedule,
+    "due_date" | "id" | "note_id" | "review_type"
+  > | null;
+  investmentJournalEdited: boolean;
+  templateKind: TemplateKind | null;
+};
 
 export function NoteEditorPage({ noteId }: { noteId: string }) {
   const router = useRouter();
@@ -48,6 +64,14 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const reviewScheduleId = searchParams.get("reviewScheduleId");
   const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
+  const analyticsUserId = user?.id ?? null;
+  const analyticsContext = useRef<NoteAnalyticsContext>({
+    baselineContentText: "",
+    dueReviewNoteEdited: false,
+    dueReviewSchedule: null,
+    investmentJournalEdited: false,
+    templateKind: null,
+  });
   const latest = useRef({
     note: null as Note | null,
     title: "",
@@ -61,7 +85,7 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     if (!supabase || !user) return;
     const client = supabase;
     getNote(client, noteId)
-      .then((data) => {
+      .then(async (data) => {
         setNote(data);
         setTitle(data.title);
         setContent(data.content);
@@ -69,18 +93,119 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
         setContentText(data.content_text || data.content);
         setNoteDate(data.note_date);
         setIsLoaded(true);
+
+        analyticsContext.current = {
+          baselineContentText: data.content_text || data.content,
+          dueReviewNoteEdited: false,
+          dueReviewSchedule: null,
+          investmentJournalEdited: false,
+          templateKind: null,
+        };
+
+        if (data.template_id) {
+          const { data: template, error: templateError } = await client
+            .from("templates")
+            .select("template_kind")
+            .eq("id", data.template_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (templateError) throw templateError;
+          analyticsContext.current.templateKind = template?.template_kind ?? null;
+        }
+
+        if (reviewScheduleId) {
+          const { data: schedule, error: scheduleError } = await client
+            .from("review_schedules")
+            .select("id, note_id, review_type, due_date")
+            .eq("id", reviewScheduleId)
+            .eq("note_id", data.id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (scheduleError) throw scheduleError;
+
+          if (schedule) {
+            analyticsContext.current.dueReviewSchedule = schedule;
+            await trackAnalyticsEvent(client, user.id, "due_review_note_opened", {
+              eventKey: `review_schedule:${schedule.id}`,
+              properties: {
+                days_overdue: daysFromToday(schedule.due_date),
+                due_date: schedule.due_date,
+                note_id: schedule.note_id,
+                review_schedule_id: schedule.id,
+                review_type: schedule.review_type,
+                source: getRouteSource(reviewScheduleId, searchParams.get("from")),
+              },
+            });
+          }
+        }
       })
       .catch((error) => {
         console.error(error);
         setLoadError("메모를 찾지 못했습니다.");
     });
-  }, [noteId, supabase, user]);
+  }, [noteId, reviewScheduleId, searchParams, supabase, user]);
 
   const autoSaveValue = useMemo(
     () => ({ content, contentJson, contentText, noteDate, title }),
     [content, contentJson, contentText, noteDate, title],
   );
   const currentNoteId = note?.id;
+
+  const trackNoteEditEvents = useCallback(
+    async (nextContentText: string) => {
+      if (!supabase || !analyticsUserId || !currentNoteId) return;
+
+      const analytics = analyticsContext.current;
+      if (
+        analytics.templateKind === "investment_journal" &&
+        !analytics.investmentJournalEdited &&
+        isMeaningfulTextChange(analytics.baselineContentText, nextContentText)
+      ) {
+        const changeLength = changedTextLength(analytics.baselineContentText, nextContentText);
+        const recorded = await trackAnalyticsEvent(
+          supabase,
+          analyticsUserId,
+          "investment_journal_edited",
+          {
+            eventKey: `note:${currentNoteId}`,
+            properties: {
+              delta_text_length_bucket: textChangeBucket(changeLength),
+              journal_date: noteDate,
+              note_id: currentNoteId,
+              source: getRouteSource(reviewScheduleId, searchParams.get("from")),
+            },
+          },
+        );
+        if (recorded) analytics.investmentJournalEdited = true;
+      }
+
+      const schedule = analytics.dueReviewSchedule;
+      if (
+        schedule &&
+        !analytics.dueReviewNoteEdited &&
+        isMeaningfulTextChange(analytics.baselineContentText, nextContentText)
+      ) {
+        const changeLength = changedTextLength(analytics.baselineContentText, nextContentText);
+        const recorded = await trackAnalyticsEvent(
+          supabase,
+          analyticsUserId,
+          "due_review_note_edited",
+          {
+            eventKey: `review_schedule:${schedule.id}`,
+            properties: {
+              delta_text_length_bucket: textChangeBucket(changeLength),
+              note_id: schedule.note_id,
+              review_schedule_id: schedule.id,
+              review_type: schedule.review_type,
+              source: getRouteSource(reviewScheduleId, searchParams.get("from")),
+            },
+          },
+        );
+        if (recorded) analytics.dueReviewNoteEdited = true;
+      }
+    },
+    [analyticsUserId, currentNoteId, noteDate, reviewScheduleId, searchParams, supabase],
+  );
 
   const saveCurrentNote = useCallback(
     async (value: typeof autoSaveValue) => {
@@ -109,8 +234,9 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
             }
           : current,
       );
+      await trackNoteEditEvents(value.contentText);
     },
-    [currentNoteId, supabase],
+    [currentNoteId, supabase, trackNoteEditEvents],
   );
 
   const saveStatus = useAutoSave({
@@ -338,4 +464,9 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
       </div>
     </AppChrome>
   );
+}
+
+function getRouteSource(reviewScheduleId: string | null, from: string | null) {
+  if (reviewScheduleId) return from === "dashboard" ? "dashboard" : "review_due";
+  return from ?? "direct";
 }

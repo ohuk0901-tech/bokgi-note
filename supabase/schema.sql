@@ -108,6 +108,16 @@ create table if not exists public.review_schedules (
   unique (note_id, review_type)
 );
 
+create table if not exists public.analytics_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  event_name text not null,
+  event_key text,
+  page_path text,
+  properties jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 alter table public.templates add column if not exists template_kind text not null default 'custom'
   check (template_kind in ('investment_journal', 'weekly_review', 'next_week_plan', 'free_note', 'custom'));
 
@@ -154,6 +164,13 @@ create index if not exists review_sources_session_idx on public.review_sources(r
 create index if not exists editable_review_notes_session_idx on public.editable_review_notes(review_session_id, sort_order);
 create index if not exists review_schedules_user_due_idx on public.review_schedules(user_id, status, due_date asc);
 create index if not exists review_schedules_note_idx on public.review_schedules(note_id, status);
+create index if not exists analytics_events_user_time_idx
+  on public.analytics_events(user_id, created_at desc);
+create index if not exists analytics_events_name_time_idx
+  on public.analytics_events(event_name, created_at desc);
+create unique index if not exists analytics_events_user_event_key_unique_idx
+  on public.analytics_events(user_id, event_name, event_key)
+  where event_key is not null;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -254,6 +271,11 @@ begin
     select id from public.notes where delete_after is not null and delete_after <= now()
   );
 
+  delete from public.analytics_events
+  where user_id in (
+    select id from public.profiles where delete_after is not null and delete_after <= now()
+  );
+
   delete from public.review_sessions where delete_after is not null and delete_after <= now();
   delete from public.notes where delete_after is not null and delete_after <= now();
   delete from public.templates where delete_after is not null and delete_after <= now();
@@ -270,6 +292,7 @@ alter table public.review_sessions enable row level security;
 alter table public.review_sources enable row level security;
 alter table public.editable_review_notes enable row level security;
 alter table public.review_schedules enable row level security;
+alter table public.analytics_events enable row level security;
 
 drop policy if exists "profiles own select" on public.profiles;
 create policy "profiles own select" on public.profiles
@@ -334,3 +357,7 @@ for all using (
 drop policy if exists "review schedules own all" on public.review_schedules;
 create policy "review schedules own all" on public.review_schedules
 for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "analytics events own insert" on public.analytics_events;
+create policy "analytics events own insert" on public.analytics_events
+for insert with check (auth.uid() = user_id);

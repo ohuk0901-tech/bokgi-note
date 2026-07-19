@@ -15,14 +15,18 @@ import { useAutoSave } from "@/components/useAutoSave";
 import { useRequireAuth } from "@/components/useRequireAuth";
 import {
   attachEditableNote,
+  changedTextLength,
   deleteBlankDraftReview,
   getActiveNotes,
   getReviewWithSources,
+  isMeaningfulTextChange,
   saveEditableNote,
   saveReview,
+  textChangeBucket,
+  trackAnalyticsEvent,
   trashReview,
 } from "@/lib/data";
-import { defaultReviewTitle, formatEditorDate } from "@/lib/date";
+import { defaultReviewTitle, formatEditorDate, weekday } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
 import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
@@ -48,6 +52,15 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const backHref = searchParams.get("from") === "dashboard" ? "/dashboard" : null;
+  const analyticsUserId = user?.id ?? null;
+  const analyticsContext = useRef({
+    editableNoteBaselines: new Map<string, string>(),
+    pinnedNoteUpdated: new Set<string>(),
+    reviewBaselineContentText: "",
+    isWeeklyReview: false,
+    sourceNoteCount: 0,
+    weeklyReviewEdited: false,
+  });
   const latest = useRef({
     review: null as ReviewSession | null,
     title: "",
@@ -78,6 +91,19 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
           ),
         );
         setIsLoaded(true);
+        analyticsContext.current = {
+          editableNoteBaselines: new Map(
+            data.editableNotes.map((note) => [
+              note.id,
+              note.content_text || note.content,
+            ]),
+          ),
+          pinnedNoteUpdated: new Set(),
+          reviewBaselineContentText: data.review.content_text || data.review.content,
+          isWeeklyReview: data.review.title.includes("주간 복기"),
+          sourceNoteCount: data.sources.length,
+          weeklyReviewEdited: false,
+        };
       })
       .catch((error) => {
         console.error(error);
@@ -90,6 +116,44 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     [content, contentJson, contentText, editorPosition, reviewDate, title],
   );
   const currentReviewId = review?.id;
+
+  const trackWeeklyReviewEditEvents = useCallback(
+    async (nextContentText: string) => {
+      if (!supabase || !analyticsUserId || !currentReviewId) return;
+      const analytics = analyticsContext.current;
+      if (
+        analytics.weeklyReviewEdited ||
+        !analytics.isWeeklyReview ||
+        !isMeaningfulTextChange(analytics.reviewBaselineContentText, nextContentText)
+      ) {
+        return;
+      }
+
+      const dayOfWeek = weekday(reviewDate);
+      const changeLength = changedTextLength(
+        analytics.reviewBaselineContentText,
+        nextContentText,
+      );
+      const recorded = await trackAnalyticsEvent(
+        supabase,
+        analyticsUserId,
+        "weekly_review_edited",
+        {
+          eventKey: `review:${currentReviewId}`,
+          properties: {
+            day_of_week: dayOfWeek,
+            delta_text_length_bucket: textChangeBucket(changeLength),
+            is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
+            review_id: currentReviewId,
+            source: searchParams.get("from") ?? "direct",
+            source_note_count: analytics.sourceNoteCount,
+          },
+        },
+      );
+      if (recorded) analytics.weeklyReviewEdited = true;
+    },
+    [analyticsUserId, currentReviewId, reviewDate, searchParams, supabase],
+  );
 
   const saveCurrentReview = useCallback(
     async (value: typeof autoSaveValue) => {
@@ -119,8 +183,9 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
             }
           : current,
       );
+      await trackWeeklyReviewEditEvents(value.contentText);
     },
-    [currentReviewId, supabase],
+    [currentReviewId, supabase, trackWeeklyReviewEditEvents],
   );
 
   const saveStatus = useAutoSave({
@@ -219,6 +284,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
 
   const client = supabase;
   const currentReview = review;
+  const currentUser = user;
 
   function handleEditorChange(value: { contentJson: Json; contentText: string }) {
     const payload = toEditorPayload(value.contentJson, value.contentText);
@@ -252,6 +318,21 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     try {
       await attachEditableNote(client, currentReview.id, note.id, editableNotes.length);
       setEditableNotes((current) => [...current, note]);
+      analyticsContext.current.editableNoteBaselines.set(
+        note.id,
+        note.content_text || note.content,
+      );
+      if (note.is_pinned) {
+        await trackAnalyticsEvent(client, currentUser.id, "pinned_note_opened_from_review", {
+          eventKey: `review:${currentReview.id}:note:${note.id}`,
+          properties: {
+            note_id: note.id,
+            review_context: "weekly_review",
+            review_id: currentReview.id,
+            source: "existing_note_picker",
+          },
+        });
+      }
       setNoteSheetOpen(false);
     } catch (error) {
       alert(error instanceof Error ? error.message : "기존 메모를 불러오지 못했습니다.");
@@ -266,6 +347,37 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
       current.map((item) => (item.id === note.id ? { ...item, ...values } : item)),
     );
     await saveEditableNote(client, note.id, values);
+    await trackEditableNoteChange(note, values);
+  }
+
+  async function trackEditableNoteChange(
+    note: Note,
+    values: Pick<Note, "title" | "content" | "content_json" | "content_text" | "note_date">,
+  ) {
+    if (!note.is_pinned || analyticsContext.current.pinnedNoteUpdated.has(note.id)) return;
+
+    const baseline =
+      analyticsContext.current.editableNoteBaselines.get(note.id) ??
+      (note.content_text || note.content);
+    const nextContentText = values.content_text || values.content;
+    if (!isMeaningfulTextChange(baseline, nextContentText)) return;
+
+    const changeLength = changedTextLength(baseline, nextContentText);
+    const recorded = await trackAnalyticsEvent(
+      client,
+      currentUser.id,
+      "pinned_note_updated_from_review",
+      {
+        eventKey: `review:${currentReview.id}:note:${note.id}`,
+        properties: {
+          delta_text_length_bucket: textChangeBucket(changeLength),
+          note_id: note.id,
+          review_context: "weekly_review",
+          review_id: currentReview.id,
+        },
+      },
+    );
+    if (recorded) analyticsContext.current.pinnedNoteUpdated.add(note.id);
   }
 
   async function handleTrash() {

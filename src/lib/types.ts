@@ -126,6 +126,27 @@ export type ReviewSchedule = {
   updated_at: string;
 };
 
+export type AnalyticsEventName =
+  | "investment_journal_created"
+  | "investment_journal_edited"
+  | "due_review_note_opened"
+  | "due_review_note_edited"
+  | "due_review_completed"
+  | "weekly_review_opened"
+  | "weekly_review_edited"
+  | "pinned_note_opened_from_review"
+  | "pinned_note_updated_from_review";
+
+export type AnalyticsEvent = {
+  id: string;
+  user_id: string;
+  event_name: AnalyticsEventName;
+  event_key: string | null;
+  page_path: string | null;
+  properties: Json;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -180,6 +201,14 @@ export type Database = {
           due_date: string;
         },
         Partial<ReviewSchedule>
+      >;
+      analytics_events: Table<
+        AnalyticsEvent,
+        Partial<AnalyticsEvent> & {
+          user_id: string;
+          event_name: AnalyticsEventName;
+        },
+        Partial<AnalyticsEvent>
       >;
     };
     Functions: {

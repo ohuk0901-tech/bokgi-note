@@ -1,4 +1,5 @@
-import { addDaysISO, formatKoreanDate, todayISO, weekStartISO } from "@/lib/date";
+import { addDaysISO, formatKoreanDate, todayISO, weekday, weekStartISO } from "@/lib/date";
+import { daysFromToday, trackAnalyticsEvent } from "@/lib/data/analytics";
 import { noteToUnified, reviewToUnified } from "@/lib/data/shared";
 import { createReviewDraft } from "@/lib/data/reviews";
 import {
@@ -87,19 +88,34 @@ export async function completeReviewSchedule(
   userId: string,
   reviewScheduleId: string,
 ) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("review_schedules")
     .update({ status: "completed", completed_at: new Date().toISOString() })
     .eq("id", reviewScheduleId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id, note_id, review_type, due_date")
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) throw new Error("복기 일정을 찾을 수 없습니다.");
+
+  await trackAnalyticsEvent(supabase, userId, "due_review_completed", {
+    eventKey: `review_schedule:${data.id}`,
+    properties: {
+      days_overdue: daysFromToday(data.due_date),
+      due_date: data.due_date,
+      note_id: data.note_id,
+      review_schedule_id: data.id,
+      review_type: data.review_type,
+    },
+  });
 }
 
 export async function startWeeklyReview(
   supabase: Client,
   userId: string,
   date = todayISO(),
+  options: { source?: string } = {},
 ) {
   const weekStart = weekStartISO(date);
   const weekEnd = addDaysISO(weekStart, 6);
@@ -180,10 +196,18 @@ export async function startWeeklyReview(
     }
 
     await syncWeeklyReviewSources(supabase, review.id, notes);
+    await trackWeeklyReviewOpened(supabase, userId, review, {
+      date,
+      entryMode: "resume",
+      source: options.source,
+      sourceNoteCount: notes.length,
+      weekEnd,
+      weekStart,
+    });
     return review;
   }
 
-  return createReviewDraft(
+  const review = await createReviewDraft(
     supabase,
     userId,
     weeklyReviewFolderId,
@@ -197,6 +221,43 @@ export async function startWeeklyReview(
       editorPosition: 1,
     },
   );
+  await trackWeeklyReviewOpened(supabase, userId, review, {
+    date,
+    entryMode: "start",
+    source: options.source,
+    sourceNoteCount: notes.length,
+    weekEnd,
+    weekStart,
+  });
+  return review;
+}
+
+async function trackWeeklyReviewOpened(
+  supabase: Client,
+  userId: string,
+  review: ReviewSession,
+  values: {
+    date: string;
+    entryMode: "start" | "resume";
+    source?: string;
+    sourceNoteCount: number;
+    weekEnd: string;
+    weekStart: string;
+  },
+) {
+  const dayOfWeek = weekday(values.date);
+  await trackAnalyticsEvent(supabase, userId, "weekly_review_opened", {
+    properties: {
+      day_of_week: dayOfWeek,
+      entry_mode: values.entryMode,
+      is_weekend: dayOfWeek === 0 || dayOfWeek === 6,
+      review_id: review.id,
+      source: values.source ?? "dashboard",
+      source_note_count: values.sourceNoteCount,
+      week_end: values.weekEnd,
+      week_start: values.weekStart,
+    },
+  });
 }
 
 async function getExistingWeeklyReview(supabase: Client, userId: string, date = todayISO()) {

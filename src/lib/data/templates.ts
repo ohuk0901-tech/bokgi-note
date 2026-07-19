@@ -11,6 +11,7 @@ import {
   DEFAULT_TEMPLATE_SPECS,
   toEditorPayload,
 } from "@/lib/editor";
+import { trackAnalyticsEvent } from "@/lib/data/analytics";
 import type { Client } from "@/lib/data/shared";
 import type { Json, Note, Template, TemplateKind } from "@/lib/types";
 
@@ -357,6 +358,7 @@ export async function createOrOpenTemplateNote(
   supabase: Client,
   userId: string,
   templateId: string,
+  options: { source?: string } = {},
 ) {
   const { data: template, error: templateError } = await supabase
     .from("templates")
@@ -416,6 +418,19 @@ export async function createOrOpenTemplateNote(
     createReviewSchedulesForNote(supabase, userId, note, template),
   ]);
 
+  if (template.template_kind === "investment_journal") {
+    await trackAnalyticsEvent(supabase, userId, "investment_journal_created", {
+      eventKey: `note:${note.id}`,
+      properties: {
+        journal_date: note.note_date,
+        note_id: note.id,
+        routine_key: routineKey,
+        source: options.source ?? "template",
+        template_key: template.template_kind,
+      },
+    });
+  }
+
   return note;
 }
 
@@ -424,6 +439,7 @@ export async function createNoteFromTemplateInFolder(
   userId: string,
   templateId: string,
   folderId: string,
+  options: { source?: string } = {},
 ) {
   const { data: template, error: templateError } = await supabase
     .from("templates")
@@ -458,6 +474,19 @@ export async function createNoteFromTemplateInFolder(
     incrementTemplateUsage(supabase, template),
     createReviewSchedulesForNote(supabase, userId, note, template),
   ]);
+
+  if (template.template_kind === "investment_journal") {
+    await trackAnalyticsEvent(supabase, userId, "investment_journal_created", {
+      eventKey: `note:${note.id}`,
+      properties: {
+        journal_date: note.note_date,
+        note_id: note.id,
+        routine_key: null,
+        source: options.source ?? "folder",
+        template_key: template.template_kind,
+      },
+    });
+  }
 
   return note;
 }
