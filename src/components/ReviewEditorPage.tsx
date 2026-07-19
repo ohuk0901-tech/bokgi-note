@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CalendarDays, CheckCircle2, MoreHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, MoreHorizontal, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
@@ -44,7 +44,6 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
   const [noteCandidates, setNoteCandidates] = useState<Note[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [noteSheetError, setNoteSheetError] = useState("");
-  const [completing, setCompleting] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
@@ -275,26 +274,6 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     router.push(backHref ?? `/folders/${currentReview.folder_id}`);
   }
 
-  async function completeReview() {
-    setCompleting(true);
-    try {
-      const snapshot = latest.current;
-      const savedDate = snapshot.reviewDate || currentReview.review_date;
-      await saveCurrentReview({
-        title: snapshot.title || defaultReviewTitle(savedDate),
-        content: snapshot.content,
-        contentJson: snapshot.contentJson,
-        contentText: snapshot.contentText,
-        editorPosition: snapshot.editorPosition,
-        reviewDate: savedDate,
-      });
-      router.push(backHref ?? `/folders/${currentReview.folder_id}`);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "복기를 저장하지 못했습니다.");
-      setCompleting(false);
-    }
-  }
-
   const toolbarLeading = (
     <Link
       href={backHref ?? `/folders/${review.folder_id}`}
@@ -319,18 +298,6 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
       </button>
       {actionMenuOpen ? (
         <div className="absolute right-0 top-12 z-[70] w-40 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
-          <button
-            type="button"
-            onClick={() => {
-              setActionMenuOpen(false);
-              void completeReview();
-            }}
-            disabled={completing}
-            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink disabled:opacity-50"
-          >
-            <CheckCircle2 size={16} />
-            {completing ? "저장 중" : "완료"}
-          </button>
           <button
             type="button"
             onClick={() => {

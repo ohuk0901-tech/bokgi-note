@@ -232,57 +232,65 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     </Link>
   );
   const toolbarTrailing = (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setActionMenuOpen((value) => !value)}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
-        aria-label="더보기"
-        aria-expanded={actionMenuOpen}
-        title="더보기"
-      >
-        <MoreHorizontal size={20} />
-      </button>
-      {actionMenuOpen ? (
-        <div className="absolute right-0 top-12 z-[70] w-44 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
-          {reviewScheduleId ? (
+    <div className="flex items-center gap-2">
+      {reviewScheduleId ? (
+        <button
+          type="button"
+          onClick={() => {
+            void handleCompleteReview();
+          }}
+          disabled={completeBusy}
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-bokgi-primary bg-bokgi-primary px-3 text-sm font-semibold text-bokgi-primary-on shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="복기 완료"
+          title="복기 완료"
+        >
+          <CheckCircle2 size={16} />
+          <span className="hidden min-[390px]:inline">
+            {completeBusy ? "처리 중" : "복기 완료"}
+          </span>
+          <span className="min-[390px]:hidden">
+            {completeBusy ? "중" : "완료"}
+          </span>
+        </button>
+      ) : null}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setActionMenuOpen((value) => !value)}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-bokgi-border bg-bokgi-surface text-bokgi-ink-soft shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+          aria-label="더보기"
+          aria-expanded={actionMenuOpen}
+          title="더보기"
+        >
+          <MoreHorizontal size={20} />
+        </button>
+        {actionMenuOpen ? (
+          <div className="absolute right-0 top-12 z-[70] w-44 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
             <button
               type="button"
               onClick={() => {
                 setActionMenuOpen(false);
-                void handleCompleteReview();
+                void handlePin();
               }}
-              disabled={completeBusy}
-              className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink disabled:opacity-50"
+              className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
             >
-              <CheckCircle2 size={16} />
-              복기 완료
+              {currentNote.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
+              {currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              setActionMenuOpen(false);
-              void handlePin();
-            }}
-            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
-          >
-            {currentNote.is_pinned ? <PinOff size={16} /> : <Pin size={16} />}
-            {currentNote.is_pinned ? "대표 메모 해제" : "대표 메모 고정"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActionMenuOpen(false);
-              void handleTrash();
-            }}
-            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-red-600 hover:bg-red-50"
-          >
-            <Trash2 size={16} />
-            휴지통으로 이동
-          </button>
-        </div>
-      ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setActionMenuOpen(false);
+                void handleTrash();
+              }}
+              className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={16} />
+              휴지통으로 이동
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 
