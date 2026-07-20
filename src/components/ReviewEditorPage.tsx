@@ -17,6 +17,7 @@ import {
   attachEditableNote,
   changedTextLength,
   deleteBlankDraftReview,
+  detachEditableNote,
   getActiveNotes,
   getReviewWithSources,
   isMeaningfulTextChange,
@@ -350,6 +351,13 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     await trackEditableNoteChange(note, values);
   }
 
+  async function completeEditableNote(note: Note) {
+    await detachEditableNote(client, currentReview.id, note.id);
+    analyticsContext.current.editableNoteBaselines.delete(note.id);
+    analyticsContext.current.pinnedNoteUpdated.delete(note.id);
+    setEditableNotes((current) => current.filter((item) => item.id !== note.id));
+  }
+
   async function trackEditableNoteChange(
     note: Note,
     values: Pick<Note, "title" | "content" | "content_json" | "content_text" | "note_date">,
@@ -522,6 +530,7 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
                 key={note.id}
                 note={note}
                 onChange={(values) => handleEditableChange(note, values)}
+                onComplete={() => completeEditableNote(note)}
               />
             ))}
             {!editableNotes.length ? (

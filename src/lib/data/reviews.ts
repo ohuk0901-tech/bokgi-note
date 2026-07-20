@@ -198,3 +198,16 @@ export async function attachEditableNote(
   });
   if (error) throw error;
 }
+
+export async function detachEditableNote(
+  supabase: Client,
+  reviewId: string,
+  noteId: string,
+) {
+  const { error } = await supabase
+    .from("editable_review_notes")
+    .delete()
+    .eq("review_session_id", reviewId)
+    .eq("note_id", noteId);
+  if (error) throw error;
+}
