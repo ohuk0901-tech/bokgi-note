@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Children, useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -25,6 +25,10 @@ const REVIEW_LABEL: Record<DashboardReviewItem["review_type"], string> = {
 };
 
 const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+const FEEDBACK_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfuD0y1L0whMtlgxLNjI29xZA-Sj_vHAmMM0bS3HYq-yt8k2w/viewform?usp=header";
+const FEEDBACK_CARD_SNOOZE_KEY = "bokgi-feedback-card-snoozed-until";
+const FEEDBACK_CARD_SNOOZE_DAYS = 3;
 
 function formatDateWithWeekday(value: string | null | undefined) {
   if (!value) return "";
@@ -40,6 +44,7 @@ export function DashboardPage() {
   const [loadError, setLoadError] = useState("");
   const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
   const [busyWeeklyReview, setBusyWeeklyReview] = useState(false);
+  const [feedbackCardVisible, setFeedbackCardVisible] = useState(false);
 
   useEffect(() => {
     if (!supabase || !user) return;
@@ -50,6 +55,19 @@ export function DashboardPage() {
         setLoadError("대시보드를 불러오지 못했습니다.");
       });
   }, [supabase, user]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      try {
+        const snoozedUntil = Number(window.localStorage.getItem(FEEDBACK_CARD_SNOOZE_KEY));
+        setFeedbackCardVisible(!snoozedUntil || snoozedUntil <= Date.now());
+      } catch {
+        setFeedbackCardVisible(true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   if (!configured) return <SetupNotice />;
   if (loadError) {
@@ -88,6 +106,16 @@ export function DashboardPage() {
       alert(error instanceof Error ? error.message : "이번 주 복기를 시작하지 못했습니다.");
       setBusyWeeklyReview(false);
     }
+  }
+
+  function snoozeFeedbackCard() {
+    const snoozedUntil = Date.now() + FEEDBACK_CARD_SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+    try {
+      window.localStorage.setItem(FEEDBACK_CARD_SNOOZE_KEY, String(snoozedUntil));
+    } catch {
+      // localStorage가 막힌 환경에서도 사용자는 카드를 닫을 수 있어야 합니다.
+    }
+    setFeedbackCardVisible(false);
   }
 
   const primaryRoutine = data.primaryRoutine;
@@ -138,6 +166,10 @@ export function DashboardPage() {
           </button>
         </DashboardSection>
 
+        {feedbackCardVisible ? (
+          <FeedbackInviteCard onSnooze={snoozeFeedbackCard} />
+        ) : null}
+
         <DashboardSection
           title="다시 볼 기록"
           aside={data.dueReviews.length ? `${Math.min(data.dueReviews.length, 5)}개` : undefined}
@@ -185,6 +217,43 @@ export function DashboardPage() {
         </DashboardSection>
       </div>
     </AppChrome>
+  );
+}
+
+function FeedbackInviteCard({ onSnooze }: { onSnooze: () => void }) {
+  return (
+    <section className="rounded-[22px] border border-bokgi-border bg-bokgi-surface px-4 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="flex gap-3">
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bokgi-accent-soft text-bokgi-accent">
+          <MessageCircle size={18} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold text-bokgi-ink">
+            복기노트 써보니 어땠나요?
+          </p>
+          <p className="mt-1 text-sm leading-5 text-bokgi-muted">
+            1분만 피드백 남겨주시면 다음 개선에 큰 도움이 됩니다.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              href={FEEDBACK_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center justify-center rounded-full bg-bokgi-primary px-4 text-sm font-semibold text-bokgi-primary-on transition active:scale-[0.98]"
+            >
+              피드백 남기기
+            </a>
+            <button
+              type="button"
+              onClick={onSnooze}
+              className="inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-medium text-bokgi-muted transition hover:bg-bokgi-surface-muted hover:text-bokgi-ink"
+            >
+              나중에
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
