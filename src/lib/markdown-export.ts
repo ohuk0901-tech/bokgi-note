@@ -1,8 +1,29 @@
-import type { Folder, Json, Note, ReviewSession } from "@/lib/types";
+import type {
+  EditableReviewNote,
+  Folder,
+  Json,
+  Note,
+  Profile,
+  ReviewSchedule,
+  ReviewSession,
+  ReviewSource,
+  Template,
+} from "@/lib/types";
 
 type MarkdownFile = {
   content: string;
   path: string;
+};
+
+type MarkdownBackupData = {
+  editableReviewNotes: EditableReviewNote[];
+  folders: Folder[];
+  notes: Note[];
+  profile: Profile | null;
+  reviewSchedules: ReviewSchedule[];
+  reviewSources: ReviewSource[];
+  reviews: ReviewSession[];
+  templates: Template[];
 };
 
 type MarkdownDocumentValues = {
@@ -67,14 +88,16 @@ export function downloadMarkdownFile(file: MarkdownFile) {
 }
 
 export function buildMarkdownBackupZip({
+  editableReviewNotes,
   folders,
   notes,
+  profile,
+  reviewSchedules,
+  reviewSources,
   reviews,
-}: {
-  folders: Folder[];
-  notes: Note[];
-  reviews: ReviewSession[];
-}) {
+  templates,
+}: MarkdownBackupData) {
+  const exportedAt = new Date().toISOString();
   const folderNames = new Map(folders.map((folder) => [folder.id, folder.name]));
   const usedPaths = new Set<string>();
   const files: MarkdownFile[] = [
@@ -83,13 +106,34 @@ export function buildMarkdownBackupZip({
       content: [
         "# 복기노트 백업",
         "",
-        `- 백업일: ${new Date().toISOString()}`,
+        `- 백업일: ${exportedAt}`,
         `- 메모: ${notes.length}개`,
         `- 복기 기록: ${reviews.length}개`,
+        `- 템플릿: ${templates.length}개`,
+        `- 다시 볼 기록 일정: ${reviewSchedules.length}개`,
         "",
         "이 ZIP 파일은 복기노트의 메모와 복기 기록을 Markdown 파일로 저장한 백업입니다.",
+        "`backup.json`에는 앱 복원에 필요한 원본 데이터 구조가 함께 들어 있습니다.",
         "앱 안의 원본 데이터는 이 파일을 내려받아도 삭제되지 않습니다.",
+        "",
+        "주의: 이 백업 파일에는 개인 기록이 들어 있으니 다른 사람에게 공유하지 마세요.",
       ].join("\n"),
+    },
+    {
+      path: "backup.json",
+      content: buildRawBackupJson(
+        {
+          editableReviewNotes,
+          folders,
+          notes,
+          profile,
+          reviewSchedules,
+          reviewSources,
+          reviews,
+          templates,
+        },
+        exportedAt,
+      ),
     },
   ];
 
@@ -119,7 +163,7 @@ export function buildMarkdownBackupZip({
     );
   }
 
-  const exportedDate = new Date().toISOString().slice(0, 10);
+  const exportedDate = exportedAt.slice(0, 10);
   return {
     blob: createZipBlob(files),
     filename: `bokgi-note-backup-${exportedDate}.zip`,
@@ -161,6 +205,33 @@ function buildMarkdownDocument(values: MarkdownDocumentValues) {
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+function buildRawBackupJson(data: MarkdownBackupData, exportedAt: string) {
+  return JSON.stringify(
+    {
+      app: "bokgi-note",
+      backup_kind: "user_data_export",
+      schema_version: 1,
+      exported_at: exportedAt,
+      warning:
+        "이 파일에는 복기노트 개인 기록 원본 데이터가 들어 있습니다. 다른 사람에게 공유하지 마세요.",
+      restore_note:
+        "현재 버전은 백업용 원본 데이터입니다. 앱 안으로 자동 복원하는 기능은 별도 개발이 필요합니다.",
+      tables: {
+        editable_review_notes: data.editableReviewNotes,
+        folders: data.folders,
+        notes: data.notes,
+        profile: data.profile,
+        review_schedules: data.reviewSchedules,
+        review_sessions: data.reviews,
+        review_sources: data.reviewSources,
+        templates: data.templates,
+      },
+    },
+    null,
+    2,
+  );
 }
 
 function markdownFromEditorJson(value: Json): string {

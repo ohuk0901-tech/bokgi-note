@@ -161,8 +161,8 @@ export function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="font-medium">내 기록 백업</p>
               <p className="mt-1 text-sm leading-6 text-bokgi-ink-soft">
-                모든 메모와 복기 기록을 Markdown 파일로 묶어 내 기기에 저장합니다.
-                앱 안의 원본 데이터는 그대로 유지됩니다.
+                모든 메모와 복기 기록을 읽기용 Markdown 파일과 복구용 JSON으로
+                묶어 내 기기에 저장합니다. 앱 안의 원본 데이터는 그대로 유지됩니다.
               </p>
               <button
                 type="button"
