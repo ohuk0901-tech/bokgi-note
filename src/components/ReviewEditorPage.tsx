@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CalendarDays, MoreHorizontal, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, FileDown, MoreHorizontal, Trash2 } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import { LoadingState } from "@/components/LoadingState";
 import { EditableReviewNoteCard } from "@/components/review/EditableReviewNoteCard";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/data";
 import { defaultReviewTitle, formatEditorDate, weekday } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import { downloadMarkdownFile, markdownFileForReview } from "@/lib/markdown-export";
 import type { Json, Note, ReviewSession, ReviewSourceItem } from "@/lib/types";
 
 export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
@@ -394,6 +395,27 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
     router.push(backHref ?? `/folders/${currentReview.folder_id}`);
   }
 
+  async function handleExportMarkdown() {
+    try {
+      const savedTitle = title || defaultReviewTitle(reviewDate);
+      await saveCurrentReview({ ...autoSaveValue, title: savedTitle });
+      downloadMarkdownFile(
+        markdownFileForReview({
+          ...currentReview,
+          title: savedTitle,
+          content: autoSaveValue.content,
+          content_json: autoSaveValue.contentJson,
+          content_text: autoSaveValue.contentText,
+          editor_position: autoSaveValue.editorPosition,
+          review_date: autoSaveValue.reviewDate,
+          updated_at: new Date().toISOString(),
+        }),
+      );
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "파일로 저장하지 못했습니다.");
+    }
+  }
+
   const toolbarLeading = (
     <Link
       href={backHref ?? `/folders/${review.folder_id}`}
@@ -417,7 +439,18 @@ export function ReviewEditorPage({ reviewId }: { reviewId: string }) {
         <MoreHorizontal size={20} />
       </button>
       {actionMenuOpen ? (
-        <div className="absolute right-0 top-12 z-[70] w-40 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+        <div className="absolute right-0 top-12 z-[70] w-44 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+          <button
+            type="button"
+            onClick={() => {
+              setActionMenuOpen(false);
+              void handleExportMarkdown();
+            }}
+            className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+          >
+            <FileDown size={16} />
+            파일로 저장
+          </button>
           <button
             type="button"
             onClick={() => {

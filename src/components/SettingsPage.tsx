@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  FileArchive,
   FileText,
   LogOut,
   Pencil,
@@ -21,6 +22,7 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { useRequireAuth } from "@/components/useRequireAuth";
 import {
   createTemplate,
+  getMarkdownBackupData,
   getTemplates,
   requestAccountDeletion,
   trashTemplate,
@@ -28,6 +30,7 @@ import {
 } from "@/lib/data";
 import type { Client } from "@/lib/data/shared";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import { buildMarkdownBackupZip, downloadBlob } from "@/lib/markdown-export";
 import type { Json, Template } from "@/lib/types";
 
 export function SettingsPage() {
@@ -38,6 +41,8 @@ export function SettingsPage() {
   const [templateMessage, setTemplateMessage] = useState("");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState("");
 
   useEffect(() => {
     if (!supabase || !user) return;
@@ -62,6 +67,21 @@ export function SettingsPage() {
     if (!ok) return;
     await requestAccountDeletion(client, currentUser.id);
     router.replace("/login");
+  }
+
+  async function downloadBackup() {
+    setBackupBusy(true);
+    setBackupMessage("");
+    try {
+      const backupData = await getMarkdownBackupData(client, currentUser.id);
+      const archive = buildMarkdownBackupZip(backupData);
+      downloadBlob(archive.blob, archive.filename);
+      setBackupMessage(`${archive.itemCount}개 기록을 백업 파일로 저장했습니다.`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "전체 메모를 백업하지 못했습니다.");
+    } finally {
+      setBackupBusy(false);
+    }
   }
 
   async function addTemplate(event: React.FormEvent<HTMLFormElement>) {
@@ -133,6 +153,29 @@ export function SettingsPage() {
               <ShieldCheck size={17} />
               개인정보 안내
             </Link>
+          </div>
+        </section>
+        <section className="px-4 py-4">
+          <div className="flex items-start gap-3">
+            <FileArchive className="mt-1 text-bokgi-accent" size={20} />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">내 기록 백업</p>
+              <p className="mt-1 text-sm leading-6 text-bokgi-ink-soft">
+                모든 메모와 복기 기록을 Markdown 파일로 묶어 내 기기에 저장합니다.
+                앱 안의 원본 데이터는 그대로 유지됩니다.
+              </p>
+              <button
+                type="button"
+                onClick={downloadBackup}
+                disabled={backupBusy}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-full bg-bokgi-primary px-4 text-sm font-semibold text-bokgi-primary-on transition active:scale-[0.98] disabled:opacity-50"
+              >
+                {backupBusy ? "백업 준비 중..." : "전체 메모 백업"}
+              </button>
+              {backupMessage ? (
+                <p className="mt-2 text-sm text-bokgi-accent">{backupMessage}</p>
+              ) : null}
+            </div>
           </div>
         </section>
         <section className="px-4 py-4">

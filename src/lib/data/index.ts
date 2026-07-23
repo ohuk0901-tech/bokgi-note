@@ -1,6 +1,7 @@
 export * from "@/lib/data/account";
 export * from "@/lib/data/analytics";
 export * from "@/lib/data/dashboard";
+export * from "@/lib/data/export-data";
 export * from "@/lib/data/folders";
 export * from "@/lib/data/notes";
 export * from "@/lib/data/reviews";

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  FileDown,
   MoreHorizontal,
   Pin,
   PinOff,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/data";
 import { formatEditorDate } from "@/lib/date";
 import { editorJsonOrText, toEditorPayload } from "@/lib/editor";
+import { downloadMarkdownFile, markdownFileForNote } from "@/lib/markdown-export";
 import type { Json, Note, ReviewSchedule, TemplateKind } from "@/lib/types";
 
 const DEFAULT_NOTE_TITLE = "제목 없음";
@@ -328,6 +330,26 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
     }
   }
 
+  async function handleExportMarkdown() {
+    try {
+      const savedTitle = autoSaveValue.title || DEFAULT_NOTE_TITLE;
+      await saveCurrentNote({ ...autoSaveValue, title: savedTitle });
+      downloadMarkdownFile(
+        markdownFileForNote({
+          ...currentNote,
+          title: savedTitle,
+          content: autoSaveValue.content,
+          content_json: autoSaveValue.contentJson,
+          content_text: autoSaveValue.contentText,
+          note_date: autoSaveValue.noteDate,
+          updated_at: new Date().toISOString(),
+        }),
+      );
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "파일로 저장하지 못했습니다.");
+    }
+  }
+
   async function handleCompleteReview() {
     if (!reviewScheduleId) return;
     setCompleteBusy(true);
@@ -392,6 +414,17 @@ export function NoteEditorPage({ noteId }: { noteId: string }) {
         </button>
         {actionMenuOpen ? (
           <div className="absolute right-0 top-12 z-[70] w-44 overflow-hidden rounded-[18px] border border-bokgi-border bg-bokgi-surface p-1 text-sm shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+            <button
+              type="button"
+              onClick={() => {
+                setActionMenuOpen(false);
+                void handleExportMarkdown();
+              }}
+              className="flex w-full items-center gap-2 rounded-[13px] px-3 py-2.5 text-left text-bokgi-ink-soft hover:bg-bokgi-surface-hover hover:text-bokgi-ink"
+            >
+              <FileDown size={16} />
+              파일로 저장
+            </button>
             <button
               type="button"
               onClick={() => {
